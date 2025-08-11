@@ -14,6 +14,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.example.templepocforground.R
+import com.example.templepocforground.helper.NotificationHelper
+import com.example.templepocforground.helper.PubSubServiceActionEnum
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -35,6 +37,8 @@ class PubSubForegroundService : Service() {
         super.onCreate()
         startForegroundService()
         startWebSocket()
+        NotificationHelper.createChannels(this)
+        startForeground(1, NotificationHelper.createRunningNotification(this))
     }
 
     private fun startForegroundService() {
@@ -56,7 +60,8 @@ class PubSubForegroundService : Service() {
 
     private fun startWebSocket() {
         val tokenUrl =
-            "wss://mypubsubdemo.webpubsub.azure.com/client/hubs/hub?access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE3NTQ1NDcyNDksImV4cCI6MTc1NDYzMzY0OSwiaWF0IjoxNzU0NTQ3MjQ5LCJhdWQiOiJodHRwczovL215cHVic3ViZGVtby53ZWJwdWJzdWIuYXp1cmUuY29tL2NsaWVudC9odWJzL2h1YiJ9.mjMPIS16nHzDum85SztvZ-b3U3IxyzjuJ32eQL8pUIc"
+
+            "wss://mypubsubdemo.webpubsub.azure.com/client/hubs/hub?access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE3NTQ5MDMyOTQsImV4cCI6MTc1NDk4OTY5NCwiaWF0IjoxNzU0OTAzMjk0LCJhdWQiOiJodHRwczovL215cHVic3ViZGVtby53ZWJwdWJzdWIuYXp1cmUuY29tL2NsaWVudC9odWJzL2h1YiJ9.D_7rl1J-YA4fqBbtPARsxIXRvy3uOF0yv6oXC762nUk"
 
         val client = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).pingInterval(
             30, TimeUnit.SECONDS
@@ -114,7 +119,7 @@ class PubSubForegroundService : Service() {
             return
         }
         audioManager.setStreamVolume(
-            AudioManager.STREAM_MUSIC, 1, AudioManager.FLAG_SHOW_UI
+            AudioManager.STREAM_MUSIC, 4, AudioManager.FLAG_SHOW_UI
         )
 
         /*audioManager.setStreamVolume(
@@ -161,6 +166,23 @@ class PubSubForegroundService : Service() {
                 mediaPlayer = null
             }
         }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            "STOP_ALERT" -> stopSound()
+
+            "ACTION_ALERT" -> {
+                val notification = NotificationHelper.createAlertNotification(this)
+                val manager = getSystemService(NotificationManager::class.java)
+                manager.notify(2, notification)
+            }
+            "ACTION_CLOSE" -> stopSelf()
+            "ACTION_MUTE" -> {
+                // no mute need to add here // vishnu
+            }
+        }
+        return START_STICKY
     }
 
     /*  private fun getNewToken(callback: (String) -> Unit) {
