@@ -2,7 +2,9 @@ package com.example.templepocforground.services
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.media.MediaPlayer
@@ -13,9 +15,9 @@ import android.os.Vibrator
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import com.example.templepocforground.MainActivity
 import com.example.templepocforground.R
 import com.example.templepocforground.helper.NotificationHelper
-import com.example.templepocforground.helper.PubSubServiceActionEnum
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -77,6 +79,7 @@ class PubSubForegroundService : Service() {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 Log.d("AzurePubSub", "Message: $text")
                 PubSubMessageStore.addMessage("Text: $text")
+                NotificationHelper.showPushNotification(applicationContext,"Azure Push Notification",text)
                 CoroutineScope(Dispatchers.Main).launch {
                     // SoundEventNotifier.notifyPlaySound()
                     when (text.trim().lowercase()) {
