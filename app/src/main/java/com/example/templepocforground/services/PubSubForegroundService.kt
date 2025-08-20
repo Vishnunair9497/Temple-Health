@@ -2,9 +2,7 @@ package com.example.templepocforground.services
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.media.MediaPlayer
@@ -13,13 +11,15 @@ import android.os.IBinder
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import com.example.templepocforground.MainActivity
 import com.example.templepocforground.R
 import com.example.templepocforground.helper.NotificationHelper
+import com.example.templepocforground.utils.SharedPrefsManager
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
@@ -29,124 +29,200 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okio.ByteString
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class PubSubForegroundService : Service() {
-    private lateinit var webSocket: WebSocket
-    private var mediaPlayer: MediaPlayer? = null
 
-    override fun onBind(intent: Intent?): IBinder? = null
-    override fun onCreate() {
-        super.onCreate()
-        startForegroundService()
-        startWebSocket()
-        NotificationHelper.createChannels(this)
-        startForeground(1, NotificationHelper.createRunningNotification(this))
+    companion object {
+        private const val CHANNEL_ID = "azure_pubsub_channel"
+        private const val CHANNEL_NAME = "Azure PubSub Background"
+        private const val NOTIFICATION_ID = 1
+
+        const val ACTION_STOP_ALERT = "STOP_ALERT"
+        const val ACTION_ALERT = "ACTION_ALERT"
+        const val ACTION_STOP_CONNECTION = "STOP_CONNECTION"
+        const val ACTION_START_CONNECTION = "START_CONNECTION"
+        const val ACTION_MUTE = "ACTION_MUTE"
     }
 
-    private fun startForegroundService() {
-        val channelId = "azure_pubsub_channel"
-        val channelName = "Azure PubSub Background"
+    @Inject
+    lateinit var prefsManager: SharedPrefsManager
+
+    private var tokenUrl: String? = null
+    private lateinit var webSocket: WebSocket
+    private var mediaPlayer: MediaPlayer? = null
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private var retryCount = 0
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        tokenUrl = prefsManager.getSocketUrl()
+        if (!tokenUrl.isNullOrEmpty()) {
+            initForegroundService()
+            startWebSocket()
+        }
+        NotificationHelper.createChannels(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopSound()
+        scope.cancel()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_STOP_ALERT -> stopSound()
+            ACTION_ALERT -> notifyAlert()
+            ACTION_STOP_CONNECTION -> stopConnection()
+            ACTION_START_CONNECTION -> if (!prefsManager.isStopped()) startWebSocket()
+            ACTION_MUTE -> {}
+        }
+        return START_NOT_STICKY
+    }
+
+    private fun initForegroundService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel =
-                NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(
+                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW
+            )
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
 
-        val notification =
-            NotificationCompat.Builder(this, channelId).setContentTitle("Azure PubSub Running")
-                .setContentText("Listening for messages in background")
-                .setSmallIcon(R.drawable.ic_launcher_foreground).build()
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Azure PubSub Running")
+            .setContentText("Listening for messages in background")
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .build()
 
-        startForeground(1, notification)
+        startForeground(NOTIFICATION_ID, notification)
+    }
+
+    private fun notifyAlert() {
+        val notification = NotificationHelper.createAlertNotification(this)
+        getSystemService(NotificationManager::class.java).notify(2, notification)
     }
 
     private fun startWebSocket() {
-        val tokenUrl =
+        val url = tokenUrl ?: return
+        val client = OkHttpClient.Builder()
+            .readTimeout(0, TimeUnit.MILLISECONDS)
+            .pingInterval(30, TimeUnit.SECONDS)
+            .build()
 
-            "wss://mypubsubdemo.webpubsub.azure.com/client/hubs/hub?access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE3NTQ5MDMyOTQsImV4cCI6MTc1NDk4OTY5NCwiaWF0IjoxNzU0OTAzMjk0LCJhdWQiOiJodHRwczovL215cHVic3ViZGVtby53ZWJwdWJzdWIuYXp1cmUuY29tL2NsaWVudC9odWJzL2h1YiJ9.D_7rl1J-YA4fqBbtPARsxIXRvy3uOF0yv6oXC762nUk"
+        val request = Request.Builder().url(url).build()
 
-        val client = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).pingInterval(
-            30, TimeUnit.SECONDS
-        ).build()
-        val request = Request.Builder().url(tokenUrl).build()
-
-        val listener = object : WebSocketListener() {
+        webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d("AzurePubSub", "Connected")
-                PubSubMessageStore.addMessage("Text: ${response.message}")
+                if (!prefsManager.isStopped()) {
+                    PubSubMessageStore.connectionStatus("CONNECTED")
+                }
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d("AzurePubSub", "Message: $text")
-                PubSubMessageStore.addMessage("Text: $text")
-                NotificationHelper.showPushNotification(applicationContext,"Azure Push Notification",text)
-                CoroutineScope(Dispatchers.Main).launch {
-                    // SoundEventNotifier.notifyPlaySound()
-                    when (text.trim().lowercase()) {
-                        "start" -> playAlertSound()
-                        "stop" -> stopSound()
-                        else -> Log.d("AzurePubSub", "Unknown command: $text")
-                    }
+                stopSound()
+                if (prefsManager.isStopped()) return
+                PubSubMessageStore.addMessage(text)
+                PubSubMessageStore.connectionStatus("CONNECTED")
 
-                }
+                NotificationHelper.showPushNotification(
+                    applicationContext,
+                    "Azure Push Notification",
+                    text
+                )
+
+                 CoroutineScope(Dispatchers.Main).launch {
+                     val messages = PubSubMessageStore.messages
+                     messages.lastOrNull()?.Message?.trim()?.let {
+                         when (it.lowercase()) {
+                             "start" -> playAlertSound()
+                             "stop" -> stopSound()
+                             else -> Log.d("Text", "Another test")
+                         }
+                     }
+                 }
             }
 
             override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                Log.d("AzurePubSub", "Binary Message: ${bytes.hex()}")
-                PubSubMessageStore.addMessage("Binary: ${bytes.hex()}")
+                Log.d("PubSubService", "Binary Message: ${bytes.hex()}")
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.e("AzurePubSub", "WebSocket Error: ${t.message}")
-                PubSubMessageStore.addMessage("Error: ${t.message}")
-                CoroutineScope(Dispatchers.IO).launch {
-                    delay(5000)
-                    startWebSocket()
+                Log.e("PubSubService", "WebSocket failure: ${t.message}")
+                PubSubMessageStore.connectionStatus("CONNECTION_FAIL")
+                scope.launch {
+                    delay(2000)
+                    if (!prefsManager.isStopped()) {
+                        if (retryCount < 5) {
+                            retryCount++
+                            startWebSocket()
+                            Log.d("PubSubService>>>>>>>", "Retrying connection: attempt $retryCount")
+                        } else {
+                            PubSubMessageStore.triggerReestablishSocket()
+                            startWebSocket()
+                            Log.d("PubSubService>>>>>>>", "callRetryLimitApi >>")
+                         //   callRetryLimitApi()
+                           // retryCount = 0
+                        }
+                    }
                 }
             }
-        }
-
-        webSocket = client.newWebSocket(request, listener)
-
+        })
     }
 
+    private fun stopConnection() {
+        if (::webSocket.isInitialized) {
+            try {
+                webSocket.close(1000, "Service stopped by user")
+                Log.d("PubSubService", "WebSocket closed.")
+            } catch (e: Exception) {
+                Log.e("PubSubService", "Error closing WebSocket: ${e.message}")
+            }
+        }
+        prefsManager.setStopped(true)
+        stopSound()
+        mediaPlayer?.release()
+        stopSelf()
+        PubSubMessageStore.connectionStatus("CONNECTION_FAIL")
+        onDestroy()
+    }
 
     private fun playAlertSound() {
+        stopSound()
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-        val result = audioManager.requestAudioFocus(
-            null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
-        )
-        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            Toast.makeText(this, "Audio focus not granted", Toast.LENGTH_SHORT).show()
-            vibrateFallback()
-            return
-        }
-        audioManager.setStreamVolume(
-            AudioManager.STREAM_MUSIC, 4, AudioManager.FLAG_SHOW_UI
-        )
-
-        /*audioManager.setStreamVolume(
+        val focusGranted = audioManager.requestAudioFocus(
+            null,
             AudioManager.STREAM_MUSIC,
-            audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
-            0,
-        )*/
+            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+        )
 
-        mediaPlayer = MediaPlayer.create(this, R.raw.alert_sound)
-        if (mediaPlayer == null) {
+        if (focusGranted != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             vibrateFallback()
             return
         }
 
-        mediaPlayer?.apply {
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 4, AudioManager.FLAG_SHOW_UI)
+
+        mediaPlayer = (MediaPlayer.create(this, R.raw.alert_sound)?.apply {
             isLooping = false
             setOnCompletionListener {
                 it.release()
                 mediaPlayer = null
             }
             start()
-        }
+        } ?: vibrateFallback()) as MediaPlayer?
+    }
 
-        Toast.makeText(this, "Playing alert sound...", Toast.LENGTH_SHORT).show()
+    private fun stopSound() {
+        mediaPlayer?.let {
+            if (it.isPlaying) it.stop()
+            it.release()
+            mediaPlayer = null
+        }
     }
 
     private fun vibrateFallback() {
@@ -154,61 +230,9 @@ class PubSubForegroundService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
+            @Suppress("DEPRECATION")
             vibrator.vibrate(500)
         }
-        Log.d("TempleHealth", "Vibration fallback triggered.")
+        Log.d("PubSubService", "Vibration fallback triggered.")
     }
-
-
-    private fun stopSound() {
-        Log.d("STOPPED", "stopSound: ")
-        mediaPlayer?.let {
-            if (it.isPlaying) {
-                it.stop()
-                it.release()
-                mediaPlayer = null
-            }
-        }
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            "STOP_ALERT" -> stopSound()
-
-            "ACTION_ALERT" -> {
-                val notification = NotificationHelper.createAlertNotification(this)
-                val manager = getSystemService(NotificationManager::class.java)
-                manager.notify(2, notification)
-            }
-            "ACTION_CLOSE" -> stopSelf()
-            "ACTION_MUTE" -> {
-                // no mute need to add here // vishnu
-            }
-        }
-        return START_STICKY
-    }
-
-    /*  private fun getNewToken(callback: (String) -> Unit) {
-          val client = OkHttpClient()
-          val request = Request.Builder()
-              .url("https://your-api-endpoint.com/getToken")
-              .build()
-
-          client.newCall(request).enqueue(object : Callback {
-              override fun onFailure(call: Call, e: IOException) {
-                  Log.e("TokenFetch", "Failed to get token: ${e.message}")
-              }
-
-              override fun onResponse(call: Call, response: Response) {
-                  if (response.isSuccessful) {
-                      val token = response.body?.string() ?: ""
-                      callback(token)
-                  } else {
-                      Log.e("TokenFetch", "Token API error: ${response.code}")
-                  }
-              }
-          })
-      }*/
-
-
 }
