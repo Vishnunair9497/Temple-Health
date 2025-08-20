@@ -130,8 +130,6 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
-
-
     @SuppressLint("ObsoleteSdkInt")
     private fun requestForegroundServicePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
