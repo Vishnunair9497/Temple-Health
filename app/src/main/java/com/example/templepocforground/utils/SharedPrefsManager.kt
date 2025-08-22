@@ -1,10 +1,9 @@
 package com.example.templepocforground.utils
 
 import android.content.SharedPreferences
-
+import androidx.core.content.edit
 import javax.inject.Inject
 import javax.inject.Singleton
-import androidx.core.content.edit
 
 @Singleton
 class SharedPrefsManager @Inject constructor(
@@ -13,6 +12,7 @@ class SharedPrefsManager @Inject constructor(
     companion object {
         private const val KEY_SOCKET_URL = "socket_url"
         private const val KEY_USERNAME = "username"
+        private const val KEY_USERID = "userid"
         private const val IS_STOPPED = "is_stoped"
     }
 
@@ -30,6 +30,14 @@ class SharedPrefsManager @Inject constructor(
 
     fun getUsername(): String? {
         return sharedPreferences.getString(KEY_USERNAME, null)
+    }
+
+    fun saveUserId(username: String) {
+        sharedPreferences.edit { putString(KEY_USERID, username) }
+    }
+
+    fun getUserId(): String? {
+        return sharedPreferences.getString(KEY_USERID, null)
     }
 
     fun setStopped(value: Boolean) {
