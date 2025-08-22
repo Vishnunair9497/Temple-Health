@@ -1,18 +1,30 @@
 package com.example.templepocforground.screens.widgetsfun
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.templepocforground.R
 import com.example.templepocforground.models.PubSubMessage
+import com.example.templepocforground.utils.formatDateTime
+
 
 @Composable
 fun MessageCard(message: PubSubMessage) {
@@ -20,17 +32,46 @@ fun MessageCard(message: PubSubMessage) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = colorResource(id = R.color.white)
+        ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(8.dp)
         ) {
-            Text(text = "Message: ${message.Message}", style = MaterialTheme.typography.bodyMedium)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "Recipient: ${message.RecipientId}", style = MaterialTheme.typography.labelSmall)
-            Text(text = "Time: ${message.Timestamp}", style = MaterialTheme.typography.labelSmall)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "Count: ${message.Count}", style = MaterialTheme.typography.labelSmall)
+            Row(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logindocimage),
+                    contentDescription = "Leading Image",
+                    modifier = Modifier
+                        .size(32.dp)
+                    // .clip(CircleShape)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = message.Message,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+            }
+            Text(
+                text = formatDateTime(message.Timestamp),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.End,
+                color = colorResource(id = R.color.black),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp)
+            )
         }
     }
 }
+
+

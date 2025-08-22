@@ -1,14 +1,10 @@
 package com.example.templepocforground.utils
 
-import android.Manifest
-import android.Manifest.permission
-import android.Manifest.permission.ACCESS_NETWORK_STATE
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import androidx.annotation.RequiresPermission
 import com.example.templepocforground.helper.NotificationHelper
 import constants.Constants
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +23,7 @@ class NetworkMonitor(context: Context) {
             _isConnected.value = true
             NotificationHelper.showPushNotification(
                 context,
-                Constants.TITLE_CONNECTION,
+                Constants.TEMPLE_HEALTH,
                 Constants.MESSAGE_ONLINE
             )
         }
@@ -36,7 +32,7 @@ class NetworkMonitor(context: Context) {
             _isConnected.value = false
             NotificationHelper.showPushNotification(
                 context,
-                Constants.TITLE_CONNECTION,
+                Constants.TEMPLE_HEALTH,
                 Constants.MESSAGE_OFFLINE
             )
         }

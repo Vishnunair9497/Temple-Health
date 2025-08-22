@@ -15,6 +15,7 @@ import androidx.core.app.NotificationCompat
 import com.example.templepocforground.R
 import com.example.templepocforground.helper.NotificationHelper
 import com.example.templepocforground.utils.SharedPrefsManager
+import constants.Constants
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -93,11 +94,10 @@ class PubSubForegroundService : Service() {
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
 
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Azure PubSub Running")
-            .setContentText("Listening for messages in background")
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .build()
+        val notification =
+            NotificationCompat.Builder(this, CHANNEL_ID).setContentTitle("Azure PubSub Running")
+                .setContentText("Listening for messages in background")
+                .setSmallIcon(R.drawable.ic_launcher_foreground).build()
 
         startForeground(NOTIFICATION_ID, notification)
     }
@@ -109,10 +109,8 @@ class PubSubForegroundService : Service() {
 
     private fun startWebSocket() {
         val url = tokenUrl ?: return
-        val client = OkHttpClient.Builder()
-            .readTimeout(0, TimeUnit.MILLISECONDS)
-            .pingInterval(30, TimeUnit.SECONDS)
-            .build()
+        val client = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS)
+            .pingInterval(30, TimeUnit.SECONDS).build()
 
         val request = Request.Builder().url(url).build()
 
@@ -128,23 +126,22 @@ class PubSubForegroundService : Service() {
                 if (prefsManager.isStopped()) return
                 PubSubMessageStore.addMessage(text)
                 PubSubMessageStore.connectionStatus("CONNECTED")
-
-                NotificationHelper.showPushNotification(
-                    applicationContext,
-                    "Azure Push Notification",
-                    text
-                )
-
-                 CoroutineScope(Dispatchers.Main).launch {
-                     val messages = PubSubMessageStore.messages
-                     messages.lastOrNull()?.Message?.trim()?.let {
-                         when (it.lowercase()) {
-                             "start" -> playAlertSound()
+                CoroutineScope(Dispatchers.Main).launch {
+                    val messages = PubSubMessageStore.messages
+                    messages.firstOrNull()?.Message?.trim()?.let {
+                        playAlertSound(messages.firstOrNull()?.Category ?: "Cat1")
+                        messages.firstOrNull()?.let { it1 ->
+                            NotificationHelper.showPushNotification(
+                                applicationContext, Constants.TEMPLE_TRAUMA_ALERT, it1.Message
+                            )
+                        }
+                        /* when (it.lowercase()) {
+                             "start" -> playAlertSound(messages.lastOrNull()?.Category ?: "Cat1")
                              "stop" -> stopSound()
                              else -> Log.d("Text", "Another test")
-                         }
-                     }
-                 }
+                         }*/
+                    }
+                }
             }
 
             override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
@@ -160,13 +157,11 @@ class PubSubForegroundService : Service() {
                         if (retryCount < 5) {
                             retryCount++
                             startWebSocket()
-                            Log.d("PubSubService>>>>>>>", "Retrying connection: attempt $retryCount")
                         } else {
                             PubSubMessageStore.triggerReestablishSocket()
                             startWebSocket()
-                            Log.d("PubSubService>>>>>>>", "callRetryLimitApi >>")
-                         //   callRetryLimitApi()
-                           // retryCount = 0
+                            //   callRetryLimitApi()
+                            // retryCount = 0
                         }
                     }
                 }
@@ -191,23 +186,37 @@ class PubSubForegroundService : Service() {
         onDestroy()
     }
 
-    private fun playAlertSound() {
+    private fun playAlertSound(category: String) {
         stopSound()
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         val focusGranted = audioManager.requestAudioFocus(
-            null,
-            AudioManager.STREAM_MUSIC,
-            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+            null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
         )
 
         if (focusGranted != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             vibrateFallback()
             return
         }
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 6, AudioManager.FLAG_SHOW_UI)
+        val alertSound: Int = when (category) {
+            "Cat1" -> {
+                R.raw.alertone
+            }
 
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 4, AudioManager.FLAG_SHOW_UI)
+            "Cat2" -> {
+                R.raw.alerttwo
+            }
 
-        mediaPlayer = (MediaPlayer.create(this, R.raw.alert_sound)?.apply {
+            "Cat3" -> {
+                R.raw.alertthree
+            }
+
+            else -> {
+                R.raw.alert_sound
+            }
+        }
+
+        mediaPlayer = (MediaPlayer.create(this, alertSound)?.apply {
             isLooping = false
             setOnCompletionListener {
                 it.release()
@@ -230,8 +239,7 @@ class PubSubForegroundService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(500)
+            @Suppress("DEPRECATION") vibrator.vibrate(500)
         }
         Log.d("PubSubService", "Vibration fallback triggered.")
     }

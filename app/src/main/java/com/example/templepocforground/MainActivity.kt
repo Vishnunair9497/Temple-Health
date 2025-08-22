@@ -34,7 +34,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.templepocforground.screens.homepage.HomePageViewModel
 import com.example.templepocforground.screens.homepage.PubSubUI
-import com.example.templepocforground.screens.widgetsfun.UsernamePopup
+import com.example.templepocforground.screens.login.LoginScreen
 import com.example.templepocforground.services.PubSubForegroundService
 import com.example.templepocforground.services.PubSubMessageStore
 import com.example.templepocforground.ui.theme.TemplePOCForgroundTheme
@@ -66,7 +66,7 @@ class MainActivity : FragmentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 PubSubMessageStore.reestablishSocket.collect { shouldReestablish ->
                     if (shouldReestablish){
-                        viewModel.getSavedUsername()?.let {
+                        viewModel.getSavedUserId()?.let {
                             viewModel.getSocketUrl(it) {
                                 viewModel.setStop(false)
                                 PubSubMessageStore.resetReestablishSocket()
@@ -98,9 +98,12 @@ class MainActivity : FragmentActivity() {
                 }
                 Box(modifier = Modifier.fillMaxSize()) {
                     if (showPopup) {
-                        UsernamePopup(context) { enteredUsername ->
+                        LoginScreen { username,password ->
                             showPopup = false
                         }
+                       /* UsernamePopup(context) { enteredUsername ->
+                            showPopup = false
+                        }*/
                     } else {
                         if (!viewModel.getSavedSocketUrl().isNullOrEmpty()) {
                             PubSubUI()
@@ -150,7 +153,7 @@ class MainActivity : FragmentActivity() {
                 startActivity(intent)
             }
         }
-        // TODO: runtime permission 
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {

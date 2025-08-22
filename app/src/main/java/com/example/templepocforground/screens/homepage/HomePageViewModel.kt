@@ -62,7 +62,10 @@ class HomePageViewModel @Inject constructor(
 
     fun saveUsername(username: String) = prefs.saveUsername(username)
     fun getSavedUsername(): String? = prefs.getUsername()
-    fun isEnabled(): Boolean? = prefs.isStopped()
+
+    fun saveUserId(username: String) = prefs.saveUserId(username)
+    fun getSavedUserId(): String? = prefs.getUserId()
+
     fun setStop(bool: Boolean) {
         prefs.setStopped(bool)
     }

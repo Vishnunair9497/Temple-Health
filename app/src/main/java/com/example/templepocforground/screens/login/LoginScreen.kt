@@ -1,84 +1,183 @@
 package com.example.templepocforground.screens.login
 
+import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.LifecycleOwner
-import com.example.templepocforground.utils.Resource
+import com.example.templepocforground.R
+import com.example.templepocforground.models.authenticate
+import com.example.templepocforground.screens.homepage.HomePageViewModel
+
 
 @Composable
 fun LoginScreen(
-    viewModel: LoginViewModel = hiltViewModel(), onLoginSuccess: () -> Unit
+    onLoginClick: (String, String) -> Unit
 ) {
-    val state = viewModel.loginState
-    val context = LocalContext.current
-    val lifecycleOwner: LifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-
-    var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
+    val context = LocalContext.current
+    val viewModel: HomePageViewModel = hiltViewModel()
 
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp), verticalArrangement = Arrangement.Center
+            .padding(24.dp)
     ) {
-        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") })
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") })
-
-        Button(
-            onClick = { viewModel.login(email, password) },
+        Text(
+            text = "Critical Alert",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp
+            ),
+            textAlign = TextAlign.Center,
+            color = colorResource(id = R.color.temple_text),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp)
-        ) {
-            Text("Login")
-        }
+                .weight(1f, fill = false)
+        )
 
+        Spacer(modifier = Modifier.height(24.dp))
+        Image(
+            painter = painterResource(id = R.drawable.logindocimage),
+            contentDescription = "App Logo",
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(3f)
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(2f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                label = { Text("Username") },
+                textStyle = TextStyle(color = Color.Black),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                textStyle = TextStyle(color = Color.Black),
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        Spacer(modifier = Modifier.height(46.dp))
         Button(
             onClick = {
-                val activity = context as FragmentActivity
-                viewModel.showBiometricPrompt(
-                    activity,
-                    onSuccess = { onLoginSuccess() },
-                    onFail = {},
-                    onError = {})
-            }, modifier = Modifier
+                when {
+                    username.isBlank() || password.isBlank() -> {
+                        Toast.makeText(
+                            context,
+                            "Username and Password cannot be empty",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    username.length < 3 || password.length < 3 -> {
+                        Toast.makeText(
+                            context,
+                            "Username and Password must be at least 3 characters",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    else -> {
+                        val result = authenticate(username, password)
+                        if (result != null) {
+                            viewModel.getSocketUrl(result) {
+                                viewModel.saveUsername(username)
+                                viewModel.saveUserId(result)
+                                viewModel.setStop(false)
+                                onLoginClick(username, password)
+                            }
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Please try valid credentials",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                        }
+                    }
+                }
+            },
+            modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp)
+                .height(50.dp)
+                .weight(1f, fill = false),
+            shape = MaterialTheme.shapes.medium,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorResource(id = R.color.temple_text),
+                contentColor = Color.White
+            )
         ) {
-            Text("Login with Biometrics")
-        }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Login/Authenticate",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
 
-        when (state) {
-            is Resource.Loading -> CircularProgressIndicator()
-            is Resource.Success -> {
-                LaunchedEffect(Unit) { onLoginSuccess() }
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    //painter = painterResource(id = R.drawable.loginarrow),
+                    contentDescription = "Arrow",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
             }
-
-            is Resource.Error -> Text("Error: ${state.message}", color = Color.Red)
-            else -> {}
         }
+
     }
+
 }
