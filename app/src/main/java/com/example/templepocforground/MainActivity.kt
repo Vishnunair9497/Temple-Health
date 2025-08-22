@@ -133,8 +133,6 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
-
-
     @SuppressLint("ObsoleteSdkInt")
     private fun requestForegroundServicePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -155,6 +153,14 @@ class MainActivity : FragmentActivity() {
                 startActivity(intent)
             }
         }
+        // TODO: runtime permission 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
+
     }
 
 
