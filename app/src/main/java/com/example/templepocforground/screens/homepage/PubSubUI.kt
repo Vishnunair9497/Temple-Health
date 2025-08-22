@@ -58,14 +58,17 @@ fun PubSubUI() {
     }
 
     if (showDialog && latestMessage != null) {
-        TraumaAlertPopUp (
+        TraumaAlertPopUp(
             title = "New Trauma Alert",
             message = latestMessage ?: "",
             onDismiss = { showDialog = false },
             onConfirm = {
-                showDialog = false
-            }
-        )
+                viewModel.getSavedUserId()?.let {
+                    viewModel.stopAlerts(messages.firstOrNull()?.Id, it, {
+                        showDialog = false
+                    })
+                }
+            })
     }
 
     fun startConnection() {
@@ -111,8 +114,7 @@ fun PubSubUI() {
             Text(
                 text = "Recent Alert",
                 style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontWeight = FontWeight.Bold, fontSize = 16.sp
                 ),
                 textAlign = TextAlign.Start,
                 color = colorResource(id = R.color.temple_text),

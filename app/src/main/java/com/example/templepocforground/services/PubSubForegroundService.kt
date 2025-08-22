@@ -15,6 +15,7 @@ import androidx.core.app.NotificationCompat
 import com.example.templepocforground.R
 import com.example.templepocforground.helper.NotificationHelper
 import com.example.templepocforground.utils.SharedPrefsManager
+import constants.Constants
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -125,15 +126,15 @@ class PubSubForegroundService : Service() {
                 if (prefsManager.isStopped()) return
                 PubSubMessageStore.addMessage(text)
                 PubSubMessageStore.connectionStatus("CONNECTED")
-
-                NotificationHelper.showPushNotification(
-                    applicationContext, "Azure Push Notification", text
-                )
-
                 CoroutineScope(Dispatchers.Main).launch {
                     val messages = PubSubMessageStore.messages
                     messages.firstOrNull()?.Message?.trim()?.let {
                         playAlertSound(messages.firstOrNull()?.Category ?: "Cat1")
+                        messages.firstOrNull()?.let { it1 ->
+                            NotificationHelper.showPushNotification(
+                                applicationContext, Constants.TEMPLE_TRAUMA_ALERT, it1.Message
+                            )
+                        }
                         /* when (it.lowercase()) {
                              "start" -> playAlertSound(messages.lastOrNull()?.Category ?: "Cat1")
                              "stop" -> stopSound()

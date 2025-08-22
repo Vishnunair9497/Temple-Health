@@ -153,7 +153,7 @@ class MainActivity : FragmentActivity() {
                 startActivity(intent)
             }
         }
-        // TODO: runtime permission 
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
