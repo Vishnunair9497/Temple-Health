@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import com.example.templepocforground.MainActivity
 import com.example.templepocforground.R
 import com.example.templepocforground.services.PubSubForegroundService
+import constants.Constants
 
 object NotificationHelper {
 
@@ -81,8 +82,8 @@ object NotificationHelper {
     }
 
     fun showPushNotification(context: Context, title: String, message: String) {
-        val channelId = "websocket_channel_high"
-        val channelName = "WebSocket Channel"
+        val channelId = Constants.CHANNEL_ID
+        val channelName = Constants.CHANNEL_NAME
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -90,7 +91,7 @@ object NotificationHelper {
                 channelName,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Azure PubSub Push Notification"
+                description = Constants.CHANNEL_DESC
                 enableLights(true)
                 enableVibration(true)
             }
