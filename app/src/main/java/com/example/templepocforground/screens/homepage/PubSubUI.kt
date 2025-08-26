@@ -52,7 +52,7 @@ fun PubSubUI() {
 
     LaunchedEffect(messages.firstOrNull()) {
         messages.firstOrNull()?.let { latest ->
-            latestMessage = latest.Message
+            latestMessage = latest.title
             showDialog = true
         }
     }
@@ -64,7 +64,7 @@ fun PubSubUI() {
             onDismiss = { showDialog = false },
             onConfirm = {
                 viewModel.getSavedUserId()?.let {
-                    viewModel.stopAlerts(messages.firstOrNull()?.Id, it, {
+                    viewModel.stopAlerts(messages.firstOrNull()?.alertId, it, {
                         showDialog = false
                     })
                 }
@@ -102,7 +102,7 @@ fun PubSubUI() {
                 CustomListSwitchTile(
                     imageRes = if (isConnected) R.drawable.connectedpersonicon else R.drawable.disconnectedpersonicon,
                     title = username,
-                    subtitle = if (isConnected) "Connected" else "Disconnected",
+                    subtitle = if (isConnected) "PubSub : Connected" else "PubSub : Disconnected",
                     onClick = {},
                     startConnection = { startConnection() },
                     stopConnection = { stopConnection() },
@@ -124,7 +124,7 @@ fun PubSubUI() {
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            val uniqueMessages = messages.distinctBy { it.Id }
+            val uniqueMessages = messages.distinctBy { it.alertId }
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()

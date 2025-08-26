@@ -124,18 +124,18 @@ class PubSubForegroundService : Service() {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 stopSound()
                 if (prefsManager.isStopped()) return
+                Log.e("Message >>>>", "Text >>>> $text")
                 PubSubMessageStore.addMessage(text)
                 PubSubMessageStore.connectionStatus("CONNECTED")
                 CoroutineScope(Dispatchers.Main).launch {
                     val messages = PubSubMessageStore.messages
-                    messages.firstOrNull()?.Message?.trim()?.let {
-                        playAlertSound(messages.firstOrNull()?.Category ?: "Cat1")
+                    messages.firstOrNull()?.data?.let {
+                        playAlertSound(messages.firstOrNull()?.data?.Category ?: "Cat1")
                         messages.firstOrNull()?.let { it1 ->
                             NotificationHelper.showPushNotification(
-                                applicationContext, Constants.TEMPLE_TRAUMA_ALERT, it1.Message
+                                applicationContext, Constants.TEMPLE_TRAUMA_ALERT, it1.title
                             )
-                        }
-                        /* when (it.lowercase()) {
+                        }/* when (it.lowercase()) {
                              "start" -> playAlertSound(messages.lastOrNull()?.Category ?: "Cat1")
                              "stop" -> stopSound()
                              else -> Log.d("Text", "Another test")
@@ -200,11 +200,12 @@ class PubSubForegroundService : Service() {
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 6, AudioManager.FLAG_SHOW_UI)
         val alertSound: Int = when (category) {
             "Cat1" -> {
-                R.raw.alertone
+
+                R.raw.alerttwo
             }
 
             "Cat2" -> {
-                R.raw.alerttwo
+                R.raw.alertone
             }
 
             "Cat3" -> {

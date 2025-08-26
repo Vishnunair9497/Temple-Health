@@ -2,13 +2,13 @@ package com.example.templepocforground.services
 
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
-import com.example.templepocforground.models.PubSubMessage
+import com.example.templepocforground.models.AlertResponse
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 object PubSubMessageStore {
-    val messages = mutableStateListOf<PubSubMessage>()
+    val messages = mutableStateListOf<AlertResponse>()
     val connection = mutableStateListOf<String>()
 
     private val _reestablishSocket = MutableStateFlow(false)
@@ -18,7 +18,7 @@ object PubSubMessageStore {
     fun addMessage(json: String) {
         try {
             Log.d("addMessage", "addMessage:>> ${json} ")
-            val msg = Gson().fromJson(json, PubSubMessage::class.java)
+            val msg = Gson().fromJson(json, AlertResponse::class.java)
             messages.add(0, msg)
 
             Log.d("TAG", "addMessage: ${messages.last()}")
