@@ -110,7 +110,7 @@ class PubSubForegroundService : Service() {
     private fun startWebSocket() {
         val url = tokenUrl ?: return
         val client = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS)
-            .pingInterval(30, TimeUnit.SECONDS).build()
+            .pingInterval(10, TimeUnit.SECONDS).build()
 
         val request = Request.Builder().url(url).build()
 
