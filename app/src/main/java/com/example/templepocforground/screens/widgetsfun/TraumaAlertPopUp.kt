@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.templepocforground.R
+import com.example.templepocforground.models.AlertResponse
 
 
 @Composable
@@ -31,9 +32,11 @@ fun TraumaAlertPopUp(
     title: String,
     message: String,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    details: AlertResponse
 ) {
-    Dialog(onDismissRequest = { /*onDismiss()*/ },
+    Dialog(
+        onDismissRequest = { /*onDismiss()*/ },
         properties = DialogProperties(
             dismissOnClickOutside = false,
             dismissOnBackPress = false
@@ -47,7 +50,10 @@ fun TraumaAlertPopUp(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(colorResource(R.color.temple_text), shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                    .background(
+                        colorResource(R.color.temple_text),
+                        shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+                    )
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -65,7 +71,7 @@ fun TraumaAlertPopUp(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = message,
+                    text = details.title + "\n" + details.data.Category + "\t" + details.data.Gender + "\t" + details.data.Injury + "\t" + details.data.Consideration + "\t" + details.data.PtNo,
                     textAlign = TextAlign.Center,
                     fontSize = 16.sp,
                     color = Color.Black

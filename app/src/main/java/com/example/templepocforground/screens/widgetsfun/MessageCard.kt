@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.templepocforground.R
 import com.example.templepocforground.models.AlertResponse
+import com.example.templepocforground.utils.getCurrentFormattedTime
 
 
 @Composable
@@ -42,27 +44,27 @@ fun MessageCard(message: AlertResponse) {
             Row(
                 modifier = Modifier
                     .padding(8.dp)
+                    .wrapContentHeight()
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.logindocimage),
                     contentDescription = "Leading Image",
-                    modifier = Modifier
-                        .size(32.dp)
+                    modifier = Modifier.size(32.dp)
                     // .clip(CircleShape)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = message.title,
+                    text = message.title + "\n" + message.data.Category + "\t" + message.data.Gender + "\t" + message.data.Injury + "\t" + message.data.Consideration + "\t" + message.data.PtNo,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
             }
             Text(
-               // text = formatDateTime(message.data.Injury),
-                text = message.data.Injury,
+                text = getCurrentFormattedTime(),
+                //  text = message.data.Injury,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.End,
                 color = colorResource(id = R.color.black),

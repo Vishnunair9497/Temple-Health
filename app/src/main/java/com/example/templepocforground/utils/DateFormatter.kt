@@ -1,8 +1,10 @@
 package com.example.templepocforground.utils
 
 import android.os.Build
+import java.text.SimpleDateFormat
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Date
 import java.util.Locale
 
 fun formatDateTime(isoString: String): String {
@@ -24,5 +26,11 @@ fun formatDateTime(isoString: String): String {
             isoString
         }
     }
+}
+
+fun getCurrentFormattedTime(): String {
+    val date = Date()
+    val formatter = SimpleDateFormat("MMM dd, hh:mm:ss a", Locale.ENGLISH)
+    return formatter.format(date)
 }
 
