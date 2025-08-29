@@ -71,7 +71,7 @@ fun TraumaAlertPopUp(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = details.title + "\n" + details.data.Category + "\t" + details.data.Gender + "\t" + details.data.Injury + "\t" + details.data.Consideration + "\t" + details.data.PtNo,
+                    text = details.data.Category + "\t" + details.data.Gender + "\t" + details.data.Injury + "\t" + details.data.Consideration + "\t" + details.data.PtNo,
                     textAlign = TextAlign.Center,
                     fontSize = 16.sp,
                     color = Color.Black
