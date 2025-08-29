@@ -18,7 +18,9 @@ data class AlertResponse(
     val iteration: Int,
     val title: String,
     val body: String,
-    val data: AlertData
+    val data: AlertData,
+    val createdDate: String
+
 )
 
 data class AlertData(

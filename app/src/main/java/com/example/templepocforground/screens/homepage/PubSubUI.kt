@@ -73,17 +73,20 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
     }
 
     if (showDialog && latestMessage != null) {
-        TraumaAlertPopUp(
-            title = "New Trauma Alert",
-            message = latestMessage ?: "",
-            onDismiss = { showDialog = false },
-            onConfirm = {
-                viewModel.getSavedUserId()?.let {
-                    viewModel.stopAlerts(messages.firstOrNull()?.alertId, it) {
-                        showDialog = false
+        messages.firstOrNull()?.let {
+            TraumaAlertPopUp(
+                title = "New Trauma Alert",
+                message = latestMessage ?: "",
+                details = it,
+                onDismiss = { showDialog = false },
+                onConfirm = {
+                    viewModel.getSavedUserId()?.let {
+                        viewModel.stopAlerts(messages.firstOrNull()?.alertId, it, {
+                            showDialog = false
+                        })
                     }
-                }
-            })
+                })
+        }
     }
 
     fun startConnection() {

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.templepocforground.R
 import com.example.templepocforground.models.AlertResponse
+import com.example.templepocforground.utils.formatDateTime
 
 
 @Composable
@@ -54,15 +55,15 @@ fun MessageCard(message: AlertResponse) {
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = message.title,
+
+                    text = message.data.Category+"\t"+message.data.Gender+"\t"+message.data.Injury+"\t"+message.data.Consideration+"\t"+message.data.PtNo,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
             }
             Text(
-               // text = formatDateTime(message.data.Injury),
-                text = message.data.Injury,
+                text = formatDateTime(message.createdDate),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.End,
                 color = colorResource(id = R.color.black),
