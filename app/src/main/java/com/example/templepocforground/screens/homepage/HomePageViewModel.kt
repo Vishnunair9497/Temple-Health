@@ -1,15 +1,21 @@
 package com.example.templepocforground.screens.homepage
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.templepocforground.models.DeviceRegisterRequest
+import com.example.templepocforground.models.DeviceRegisterResponse
 import com.example.templepocforground.models.NegotiateModel
 import com.example.templepocforground.repository.AuthRepository
 import com.example.templepocforground.utils.Resource
 import com.example.templepocforground.utils.SharedPrefsManager
+import constants.Constants
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,6 +27,8 @@ class HomePageViewModel @Inject constructor(
 
     var socketState by mutableStateOf<Resource<NegotiateModel>>(Resource.Idle)
         private set
+    private val _registerState = MutableStateFlow<Result<DeviceRegisterResponse>?>(null)
+    val registerState: StateFlow<Result<DeviceRegisterResponse>?> = _registerState
 
     fun getSocketUrl(uid: String, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
@@ -68,6 +76,30 @@ class HomePageViewModel @Inject constructor(
 
     fun setStop(bool: Boolean) {
         prefs.setStopped(bool)
+    }
+
+
+    fun registerDevice(deviceId: String, token: String,context: Context) {
+        if (!prefs.isAlreadyDeviceRegistered(deviceId, token)) {
+            viewModelScope.launch {
+                repository.registerDevice(
+                    DeviceRegisterRequest(
+                        deviceId = deviceId,
+                        token = token,
+                        platform = Constants.FCM_PLATFORM,
+                        userid = getSavedUserId().toString(),
+                        tags = listOf("er", "alert")
+                    )
+                ).collect { result ->
+                    _registerState.value = result
+
+                    // Save registration token only on success
+                    result.onSuccess {
+                        prefs.saveDeviceRegistration(deviceId, token)
+                    }
+                }
+            }
+        }
     }
 
 }
