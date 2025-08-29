@@ -118,7 +118,6 @@ object NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_HIGH) // Pre-Oreo
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

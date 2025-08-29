@@ -12,6 +12,7 @@ import com.example.templepocforground.models.NegotiateModel
 import com.example.templepocforground.repository.AuthRepository
 import com.example.templepocforground.utils.Resource
 import com.example.templepocforground.utils.SharedPrefsManager
+import constants.Constants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -85,7 +86,7 @@ class HomePageViewModel @Inject constructor(
                     DeviceRegisterRequest(
                         deviceId = deviceId,
                         token = token,
-                        platform = "fcm",
+                        platform = Constants.FCM_PLATFORM,
                         userid = getSavedUserId().toString(),
                         tags = listOf("er", "alert")
                     )
