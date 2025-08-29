@@ -3,6 +3,7 @@
 package com.example.templepocforground.screens.homepage
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.templepocforground.R
+import com.example.templepocforground.helper.NotificationHelper
+import com.example.templepocforground.screens.login.LoginViewModel
 import com.example.templepocforground.screens.widgetsfun.CustomListSwitchTile
 import com.example.templepocforground.screens.widgetsfun.MessageCard
 import com.example.templepocforground.screens.widgetsfun.TraumaAlertPopUp
@@ -39,21 +43,32 @@ import com.example.templepocforground.utils.getNetworkType
 
 
 @Composable
-fun PubSubUI() {
+fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val messages = PubSubMessageStore.messages
     val connectionState = PubSubMessageStore.connection
     val viewModel: HomePageViewModel = hiltViewModel()
     val networkType = getNetworkType(context)
-
-
+    val state by homePageViewModel.registerState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var latestMessage by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        val deviceId = NotificationHelper.getOrCreateAppId(context)
+        val fcmToken = NotificationHelper.fetchFcmToken()
+        if (fcmToken != null) {
+            homePageViewModel.registerDevice(deviceId, fcmToken,context)
+        }
+    }
 
-    LaunchedEffect(messages.firstOrNull()) {
+    LaunchedEffect(messages.firstOrNull(),state) {
         messages.firstOrNull()?.let { latest ->
             latestMessage = latest.title
             showDialog = true
+        }
+        state?.onSuccess { response ->
+            Toast.makeText(context, response.message, Toast.LENGTH_SHORT).show()
+        }?.onFailure { error ->
+            Toast.makeText(context, error.message ?: "Error", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -64,9 +79,9 @@ fun PubSubUI() {
             onDismiss = { showDialog = false },
             onConfirm = {
                 viewModel.getSavedUserId()?.let {
-                    viewModel.stopAlerts(messages.firstOrNull()?.alertId, it, {
+                    viewModel.stopAlerts(messages.firstOrNull()?.alertId, it) {
                         showDialog = false
-                    })
+                    }
                 }
             })
     }

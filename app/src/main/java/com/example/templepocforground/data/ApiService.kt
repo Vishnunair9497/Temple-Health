@@ -4,6 +4,8 @@ import com.example.templepocforground.models.AcknowledgeRequest
 import com.example.templepocforground.models.AcknowledgeResponse
 import com.example.templepocforground.models.AuthRequest
 import com.example.templepocforground.models.AuthResponse
+import com.example.templepocforground.models.DeviceRegisterRequest
+import com.example.templepocforground.models.DeviceRegisterResponse
 import com.example.templepocforground.models.NegotiateModel
 import com.example.templepocforground.models.NegotiateRequest
 import retrofit2.Response
@@ -22,4 +24,8 @@ interface ApiService {
     suspend fun acknowledgeNotification(
         @Body request: AcknowledgeRequest
     ): Response<AcknowledgeResponse>
+
+    @POST("devices/registration")
+    suspend fun deviceRegister(@Body request: DeviceRegisterRequest) : DeviceRegisterResponse
+
 }
