@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.example.templepocforground.R
 import com.example.templepocforground.models.AlertResponse
 import com.example.templepocforground.utils.formatDateTime
+import com.example.templepocforground.utils.formatIsoToReadable
 
 
 @Composable
@@ -63,7 +64,7 @@ fun MessageCard(message: AlertResponse) {
                 )
             }
             Text(
-                text = formatDateTime(message.createdDate),
+                text = formatIsoToReadable(message.createdDate),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.End,
                 color = colorResource(id = R.color.black),
