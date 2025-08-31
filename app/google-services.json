@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "132002124214",
+    "project_id": "templepoc-forground",
+    "storage_bucket": "templepoc-forground.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:132002124214:android:e9c10237e1a1f1d0f87117",
+        "android_client_info": {
+          "package_name": "com.example.templepocforground"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_UqBxdS7Qh1wk1jlEagJT-gYJl6bQVcg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
