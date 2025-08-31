@@ -92,8 +92,6 @@ class HomePageViewModel @Inject constructor(
                     )
                 ).collect { result ->
                     _registerState.value = result
-
-                    // Save registration token only on success
                     result.onSuccess {
                         prefs.saveDeviceRegistration(deviceId, token)
                     }

@@ -17,6 +17,7 @@ retrofit = "2.11.0"
 gson = "2.11.0"
 javapoet = "1.13.0"
 biometric = "1.2.0-alpha05"
+firebase-messaging = "25.0.0"
 
 
 [libraries]
@@ -46,6 +47,7 @@ retrofit-converter-gson = { module = "com.squareup.retrofit2:converter-gson", ve
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebase-messaging" }
 
 
 [plugins]
