@@ -5,13 +5,18 @@ package com.example.templepocforground.screens.homepage
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -23,7 +28,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,9 +38,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.templepocforground.MainActivity
 import com.example.templepocforground.R
 import com.example.templepocforground.helper.NotificationHelper
-import com.example.templepocforground.screens.login.LoginViewModel
 import com.example.templepocforground.screens.widgetsfun.CustomListSwitchTile
 import com.example.templepocforground.screens.widgetsfun.MessageCard
 import com.example.templepocforground.screens.widgetsfun.TraumaAlertPopUp
@@ -50,17 +57,18 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
     val viewModel: HomePageViewModel = hiltViewModel()
     val networkType = getNetworkType(context)
     val state by homePageViewModel.registerState.collectAsState()
+    val onCallState by homePageViewModel.onCallState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var latestMessage by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         val deviceId = NotificationHelper.getOrCreateAppId(context)
         val fcmToken = NotificationHelper.fetchFcmToken()
         if (fcmToken != null) {
-            homePageViewModel.registerDevice(deviceId, fcmToken,context)
+            homePageViewModel.registerDevice(deviceId, fcmToken, context)
         }
     }
 
-    LaunchedEffect(messages.firstOrNull(),state) {
+    LaunchedEffect(messages.firstOrNull(), state) {
         messages.firstOrNull()?.let { latest ->
             latestMessage = latest.title
             showDialog = true
@@ -78,18 +86,28 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
                 title = "New Trauma Alert",
                 message = latestMessage ?: "",
                 details = it,
-                onDismiss = { showDialog = false },
+                onDismiss = {
+                    showDialog = false;
+                },
                 onConfirm = {
                     viewModel.getSavedUserId()?.let {
                         viewModel.stopAlerts(messages.firstOrNull()?.alertId, it, {
                             showDialog = false
                         })
                     }
+
                 })
         }
     }
 
     fun startConnection() {
+
+        /* viewModel.getSavedUserId()?.let { homePageViewModel.onCallStatusUpdate(it, true) }
+         onCallState?.onSuccess { response ->
+             Toast.makeText(context, "On Call", Toast.LENGTH_SHORT).show()
+         }?.onFailure { error ->
+             Toast.makeText(context, "Erooorrr  "+error.message ?: "Error", Toast.LENGTH_SHORT).show()
+         }*/
         val startIntent = Intent(context, PubSubForegroundService::class.java).apply {
             action = "START_CONNECTION"
         }
@@ -97,7 +115,12 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
         viewModel.setStop(false)
     }
 
-    fun stopConnection() {
+    fun stopConnection() {/* viewModel.getSavedUserId()?.let { homePageViewModel.onCallStatusUpdate(it, true) }
+         onCallState?.onSuccess { response ->
+             Toast.makeText(context, "Off Call", Toast.LENGTH_SHORT).show()
+         }?.onFailure { error ->
+             Toast.makeText(context, error.message ?: "Error", Toast.LENGTH_SHORT).show()
+         }*/
         val stopIntent = Intent(context, PubSubForegroundService::class.java).apply {
             action = "STOP_CONNECTION"
         }
@@ -107,7 +130,37 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
 
     Scaffold(
         // topBar = { TopAppBar(title = { Text("Azure PubSub Client") }) }
-    ) { padding ->
+        bottomBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Button(
+                    onClick = {
+                        viewModel.logOut()
+                        Toast.makeText(context, "Logged out", Toast.LENGTH_SHORT).show()
+                        val intent = Intent(context, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.purple_500)
+                    )
+                ) {
+                    Text(
+                        text = "Log out", style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ), color = Color.White
+                    )
+                }
+            }
+        }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -120,11 +173,11 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
                 CustomListSwitchTile(
                     imageRes = if (isConnected) R.drawable.connectedpersonicon else R.drawable.disconnectedpersonicon,
                     title = username,
-                    subtitle = if (isConnected) "PubSub : Connected" else "PubSub : Disconnected",
+                    subtitle = if (isConnected) "Socket : Connected" else "Socket : Disconnected",
                     onClick = {},
                     startConnection = { startConnection() },
                     stopConnection = { stopConnection() },
-                    connectingVia = "Connecting via $networkType",
+                    connectingVia = "Internet : Connecting via $networkType",
                     receivingAlert = if (isConnected) "You are receiving alert" else "Not receiving any alert"
                 )
             }
@@ -154,6 +207,7 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
                     }
                 }
             }
+
         }
     }
 }

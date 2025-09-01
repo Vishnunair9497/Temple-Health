@@ -7,7 +7,7 @@ import com.example.templepocforground.models.AuthRequest
 import com.example.templepocforground.models.DeviceRegisterRequest
 import com.example.templepocforground.models.DeviceRegisterResponse
 import com.example.templepocforground.models.NegotiateRequest
-import com.google.gson.Gson
+import com.example.templepocforground.models.OnCallStatusRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
@@ -27,6 +27,19 @@ class AuthRepository @Inject constructor(
     fun registerDevice(request: DeviceRegisterRequest): Flow<Result<DeviceRegisterResponse>> = flow {
         try {
             val response =  api.deviceRegister(request)
+            emit(Result.success(response))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    fun updateOnCallStatus(onCallStatusRequest: OnCallStatusRequest): Flow<Result<String>> =flow {
+
+        Log.e( "Username : ",onCallStatusRequest.UserId)
+        Log.e( "status : ",onCallStatusRequest.Status.toString())
+        try {
+            val response = api.getOnCallStatus(onCallStatusRequest)
+            Log.e( "response : ",response.toString())
             emit(Result.success(response))
         } catch (e: Exception) {
             emit(Result.failure(e))

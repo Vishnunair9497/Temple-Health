@@ -8,6 +8,7 @@ import com.example.templepocforground.models.DeviceRegisterRequest
 import com.example.templepocforground.models.DeviceRegisterResponse
 import com.example.templepocforground.models.NegotiateModel
 import com.example.templepocforground.models.NegotiateRequest
+import com.example.templepocforground.models.OnCallStatusRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -27,5 +28,8 @@ interface ApiService {
 
     @POST("devices/registration")
     suspend fun deviceRegister(@Body request: DeviceRegisterRequest) : DeviceRegisterResponse
+
+    @POST("users/oncall")
+    suspend fun getOnCallStatus(@Body request: OnCallStatusRequest) : String
 
 }

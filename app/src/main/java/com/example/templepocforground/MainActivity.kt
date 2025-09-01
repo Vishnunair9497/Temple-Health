@@ -71,7 +71,10 @@ class MainActivity : FragmentActivity() {
                                 viewModel.setStop(false)
                                 PubSubMessageStore.resetReestablishSocket()
                                 viewModel.getSavedSocketUrl()
-                                    ?.let { msg -> Log.e("Reinitiate >>>>>", msg) }
+                                    ?.let { msg -> Log.e("Reinitiate >>>>> fff ", msg)
+
+
+                                    }
                             }
                         }
                     }
@@ -101,9 +104,6 @@ class MainActivity : FragmentActivity() {
                         LoginScreen { username,password ->
                             showPopup = false
                         }
-                       /* UsernamePopup(context) { enteredUsername ->
-                            showPopup = false
-                        }*/
                     } else {
                         if (!viewModel.getSavedSocketUrl().isNullOrEmpty()) {
                             PubSubUI()

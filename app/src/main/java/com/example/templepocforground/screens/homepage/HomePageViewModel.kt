@@ -1,6 +1,7 @@
 package com.example.templepocforground.screens.homepage
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -9,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.templepocforground.models.DeviceRegisterRequest
 import com.example.templepocforground.models.DeviceRegisterResponse
 import com.example.templepocforground.models.NegotiateModel
+import com.example.templepocforground.models.OnCallStatusRequest
 import com.example.templepocforground.repository.AuthRepository
 import com.example.templepocforground.utils.Resource
 import com.example.templepocforground.utils.SharedPrefsManager
@@ -29,6 +31,9 @@ class HomePageViewModel @Inject constructor(
         private set
     private val _registerState = MutableStateFlow<Result<DeviceRegisterResponse>?>(null)
     val registerState: StateFlow<Result<DeviceRegisterResponse>?> = _registerState
+
+    private val _onCallState = MutableStateFlow<Result<String>?>(null)
+    val onCallState: StateFlow<Result<String>?> = _onCallState
 
     fun getSocketUrl(uid: String, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
@@ -74,12 +79,16 @@ class HomePageViewModel @Inject constructor(
     fun saveUserId(username: String) = prefs.saveUserId(username)
     fun getSavedUserId(): String? = prefs.getUserId()
 
+    fun logOut() {
+        prefs.clearAll()
+    }
+
     fun setStop(bool: Boolean) {
         prefs.setStopped(bool)
     }
 
 
-    fun registerDevice(deviceId: String, token: String,context: Context) {
+    fun registerDevice(deviceId: String, token: String, context: Context) {
         if (!prefs.isAlreadyDeviceRegistered(deviceId, token)) {
             viewModelScope.launch {
                 repository.registerDevice(
@@ -95,6 +104,19 @@ class HomePageViewModel @Inject constructor(
                     result.onSuccess {
                         prefs.saveDeviceRegistration(deviceId, token)
                     }
+                }
+            }
+        }
+    }
+
+    fun onCallStatusUpdate(userId: String, status: Boolean) {
+        viewModelScope.launch {
+            repository.updateOnCallStatus(OnCallStatusRequest(userId, status)).collect { result ->
+                result.onSuccess { message ->
+                    Log.d("OnCall", "Success: $message")
+                    _onCallState.value = result
+                }.onFailure { error ->
+                    Log.e("OnCall", "Error: ${error.message}")
                 }
             }
         }

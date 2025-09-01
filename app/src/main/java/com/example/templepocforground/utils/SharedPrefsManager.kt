@@ -64,6 +64,6 @@ class SharedPrefsManager @Inject constructor(
 
 
     fun clearAll() {
-        sharedPreferences.edit { clear() }
+        sharedPreferences.edit { clear().apply() }
     }
 }
