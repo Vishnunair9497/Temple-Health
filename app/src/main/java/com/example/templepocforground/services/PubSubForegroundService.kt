@@ -143,6 +143,7 @@ class PubSubForegroundService : Service() {
     }
 
     private fun startWebSocket() {
+        stopSound()
         val url = tokenUrl ?: return
         val client = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS)
             .pingInterval(10, TimeUnit.SECONDS).build()
@@ -188,6 +189,7 @@ class PubSubForegroundService : Service() {
                         if (retryCount < 5) {
                             retryCount++
                             callWebSocket()
+
                             //  startWebSocket()
                         } else {
                             PubSubMessageStore.triggerReestablishSocket()

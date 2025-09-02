@@ -41,12 +41,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.templepocforground.MainActivity
 import com.example.templepocforground.R
 import com.example.templepocforground.helper.NotificationHelper
+import com.example.templepocforground.models.AlertResponse
 import com.example.templepocforground.screens.widgetsfun.CustomListSwitchTile
 import com.example.templepocforground.screens.widgetsfun.MessageCard
 import com.example.templepocforground.screens.widgetsfun.TraumaAlertPopUp
-import com.example.templepocforground.services.PubSubForegroundService
 import com.example.templepocforground.services.PubSubMessageStore
 import com.example.templepocforground.utils.getNetworkType
+import com.example.templepocforground.utils.parseDate
 
 
 @Composable
@@ -60,6 +61,10 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
     val onCallState by homePageViewModel.onCallState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var latestMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.startConnection()
+    }
 
     LaunchedEffect(Unit) {
         val deviceId = NotificationHelper.getOrCreateAppId(context)
@@ -88,13 +93,14 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
                 message = latestMessage ?: "",
                 details = it,
                 onDismiss = {
-                    showDialog = false;
+                    showDialog = false
+                    viewModel.stopSound()
                 },
                 onConfirm = {
                     viewModel.getSavedUserId()?.let {
                         viewModel.stopAlerts(messages.firstOrNull()?.alertId, it, {
                             showDialog = false
-
+                            viewModel.stopSound()
                         })
                     }
 
@@ -102,36 +108,7 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
         }
     }
 
-    fun startConnection() {
-
-        /* viewModel.getSavedUserId()?.let { homePageViewModel.onCallStatusUpdate(it, true) }
-         onCallState?.onSuccess { response ->
-             Toast.makeText(context, "On Call", Toast.LENGTH_SHORT).show()
-         }?.onFailure { error ->
-             Toast.makeText(context, "Erooorrr  "+error.message ?: "Error", Toast.LENGTH_SHORT).show()
-         }*/
-        val startIntent = Intent(context, PubSubForegroundService::class.java).apply {
-            action = "START_CONNECTION"
-        }
-        context.startService(startIntent)
-        viewModel.setStop(false)
-    }
-
-    fun stopConnection() {/* viewModel.getSavedUserId()?.let { homePageViewModel.onCallStatusUpdate(it, true) }
-         onCallState?.onSuccess { response ->
-             Toast.makeText(context, "Off Call", Toast.LENGTH_SHORT).show()
-         }?.onFailure { error ->
-             Toast.makeText(context, error.message ?: "Error", Toast.LENGTH_SHORT).show()
-         }*/
-        val stopIntent = Intent(context, PubSubForegroundService::class.java).apply {
-            action = "STOP_CONNECTION"
-        }
-        context.startService(stopIntent)
-        viewModel.setStop(true)
-    }
-
     Scaffold(
-        // topBar = { TopAppBar(title = { Text("Azure PubSub Client") }) }
         bottomBar = {
             Box(
                 modifier = Modifier
@@ -141,7 +118,10 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
             ) {
                 Button(
                     onClick = {
+                        messages.clear()
                         viewModel.logOut()
+                        viewModel.stopConnection()
+                        messages.clear()
                         Toast.makeText(context, "Logged out", Toast.LENGTH_SHORT).show()
                         val intent = Intent(context, MainActivity::class.java)
                         intent.flags =
@@ -178,8 +158,8 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
                     title = username,
                     subtitle = if (isConnected) "Socket : Connected" else "Socket : Disconnected",
                     onClick = {},
-                    startConnection = { startConnection() },
-                    stopConnection = { stopConnection() },
+                    startConnection = { viewModel.startConnection() },
+                    stopConnection = { viewModel.stopConnection() },
                     connectingVia = "Internet : Connecting via $networkType",
                     receivingAlert = if (isConnected) "You are receiving alert" else "Not receiving any alert"
                 )
@@ -198,22 +178,36 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            val uniqueMessages =
-                messages.distinctBy { it.alertId }
-            val sortedMessages = uniqueMessages.reversed()
+            /* val uniqueMessages =
+                 messages.distinctBy { it.alertId }*/
 
+            val uniqueMessages = messages
+                .groupBy { it.alertId }
+                .mapValues { entry ->
+                    entry.value.maxWithOrNull(
+                        compareBy<AlertResponse> { it.iteration }
+                            .thenByDescending { parseDate(it.createdDate) }
+                    )!!
+                }
+                .values
+                .sortedWith(
+                    compareByDescending<AlertResponse> { it.iteration }
+                        .thenByDescending { parseDate(it.createdDate) }
+                )
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
                 if (uniqueMessages.isNotEmpty()) {
-                    items(sortedMessages.size) { index ->
-                        MessageCard(sortedMessages[index])
+                    items(uniqueMessages.size) { index ->
+                        MessageCard(uniqueMessages[index])
                     }
                 }
             }
 
         }
+
     }
+
 }

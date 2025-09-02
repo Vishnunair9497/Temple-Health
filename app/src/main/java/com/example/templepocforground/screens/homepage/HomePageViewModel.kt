@@ -1,6 +1,8 @@
 package com.example.templepocforground.screens.homepage
 
+import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,6 +14,7 @@ import com.example.templepocforground.models.DeviceRegisterResponse
 import com.example.templepocforground.models.NegotiateModel
 import com.example.templepocforground.models.OnCallStatusRequest
 import com.example.templepocforground.repository.AuthRepository
+import com.example.templepocforground.services.PubSubForegroundService
 import com.example.templepocforground.utils.Resource
 import com.example.templepocforground.utils.SharedPrefsManager
 import constants.Constants
@@ -23,7 +26,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomePageViewModel @Inject constructor(
-    private val repository: AuthRepository, private val prefs: SharedPrefsManager
+    private val repository: AuthRepository, private val prefs: SharedPrefsManager,
+    private val appContext: Application
 
 ) : ViewModel() {
 
@@ -34,6 +38,7 @@ class HomePageViewModel @Inject constructor(
 
     private val _onCallState = MutableStateFlow<Result<String>?>(null)
     val onCallState: StateFlow<Result<String>?> = _onCallState
+    private val context get() = appContext.applicationContext
 
     fun getSocketUrl(uid: String, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
@@ -70,6 +75,30 @@ class HomePageViewModel @Inject constructor(
             }
         }
     }
+
+    fun startConnection() {
+        val startIntent = Intent(context, PubSubForegroundService::class.java).apply {
+            action = "START_CONNECTION"
+        }
+        context.startService(startIntent)
+        setStop(false)
+    }
+
+    fun stopConnection() {
+        val stopIntent = Intent(context, PubSubForegroundService::class.java).apply {
+            action = "STOP_CONNECTION"
+        }
+        context.startService(stopIntent)
+        setStop(true)
+    }
+
+    fun stopSound() {
+        val stopSoundIntent = Intent(context, PubSubForegroundService::class.java).apply {
+            action = "STOP_ALERT"
+        }
+        context.startService(stopSoundIntent)
+    }
+
 
     fun getSavedSocketUrl(): String? = prefs.getSocketUrl()
 
@@ -125,5 +154,6 @@ class HomePageViewModel @Inject constructor(
             }
         }
     }
+
 
 }

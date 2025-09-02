@@ -99,8 +99,8 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
+                value = username.trim(),
+                onValueChange = { username = it.trim() },
                 label = { Text("Username") },
                 textStyle = TextStyle(color = Color.Black),
                 modifier = Modifier.fillMaxWidth()
@@ -109,8 +109,8 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
+                value = password.trim(),
+                onValueChange = { password = it.trim() },
                 label = { Text("Password") },
                 textStyle = TextStyle(color = Color.Black),
                 visualTransformation = PasswordVisualTransformation(),
