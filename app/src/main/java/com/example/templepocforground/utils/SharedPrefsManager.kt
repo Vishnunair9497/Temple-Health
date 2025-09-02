@@ -16,6 +16,7 @@ class SharedPrefsManager @Inject constructor(
         private const val IS_STOPPED = "is_stoped"
         private const val KEY_FCM_TOKEN = "last_fcm_token"
         private const val KEY_DEVICE_ID = "last_registered_device_id"
+        private const val FIRST_TIME = "firstTimeLogin"
     }
 
     fun saveSocketUrl(url: String) {
@@ -56,10 +57,19 @@ class SharedPrefsManager @Inject constructor(
             putString(KEY_FCM_TOKEN, token)
         }
     }
+
     fun isAlreadyDeviceRegistered(deviceId: String, token: String): Boolean {
         val savedDeviceId = sharedPreferences.getString(KEY_DEVICE_ID, null)
         val savedToken = sharedPreferences.getString(KEY_FCM_TOKEN, null)
         return savedDeviceId == deviceId && savedToken == token
+    }
+
+    fun saveFirstTime(login: Boolean) {
+        sharedPreferences.edit { putBoolean(FIRST_TIME, login) }
+    }
+
+    fun getFirstTime(): Boolean? {
+        return sharedPreferences.getBoolean(FIRST_TIME, true)
     }
 
 

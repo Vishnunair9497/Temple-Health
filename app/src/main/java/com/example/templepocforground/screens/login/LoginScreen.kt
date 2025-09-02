@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,16 +43,27 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.templepocforground.R
 import com.example.templepocforground.models.authenticate
 import com.example.templepocforground.screens.homepage.HomePageViewModel
+import com.example.templepocforground.utils.NetworkMonitor
 
 
 @Composable
 fun LoginScreen(
-    onLoginClick: (String, String) -> Unit
+    onLoginClick: (String, String) -> Unit,
+    networkMonitor: NetworkMonitor = NetworkMonitor(LocalContext.current)
+
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val context = LocalContext.current
+    var isConnected by remember { mutableStateOf(true) }
+
     val viewModel: HomePageViewModel = hiltViewModel()
+
+    LaunchedEffect(Unit) {
+        networkMonitor.isConnected.collect { connected ->
+            isConnected = connected
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -110,6 +122,14 @@ fun LoginScreen(
         Button(
             onClick = {
                 when {
+                    !isConnected -> {
+                        Toast.makeText(
+                            context,
+                            "No Internet Connection",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
                     username.isBlank() || password.isBlank() -> {
                         Toast.makeText(
                             context,

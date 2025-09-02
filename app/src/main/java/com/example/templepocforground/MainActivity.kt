@@ -39,7 +39,6 @@ import com.example.templepocforground.services.PubSubForegroundService
 import com.example.templepocforground.services.PubSubMessageStore
 import com.example.templepocforground.ui.theme.TemplePOCForgroundTheme
 import com.example.templepocforground.utils.NetworkMonitor
-import com.example.templepocforground.utils.NoInternetDialog
 import com.example.templepocforground.utils.Resource
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -65,15 +64,23 @@ class MainActivity : FragmentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 PubSubMessageStore.reestablishSocket.collect { shouldReestablish ->
-                    if (shouldReestablish){
+                    if (shouldReestablish) {
                         viewModel.getSavedUserId()?.let {
                             viewModel.getSocketUrl(it) {
                                 viewModel.setStop(false)
                                 PubSubMessageStore.resetReestablishSocket()
                                 viewModel.getSavedSocketUrl()
-                                    ?.let { msg -> Log.e("Reinitiate >>>>> fff ", msg)
-
-
+                                    ?.let { msg ->
+                                        viewModel.saveSocketUrl(msg)
+                                        Log.e("TAG", "onCreate: ${viewModel.getSavedSocketUrl()}")
+                                        val serviceIntent = Intent(
+                                            this@MainActivity,
+                                            PubSubForegroundService::class.java
+                                        )
+                                        ContextCompat.startForegroundService(
+                                            this@MainActivity,
+                                            serviceIntent
+                                        )
                                     }
                             }
                         }
@@ -92,8 +99,9 @@ class MainActivity : FragmentActivity() {
                         viewModel.getSavedUsername().isNullOrEmpty()
                     )
                 }
-                var isConnected by remember { mutableStateOf(true) }
+
                 val state = viewModel.socketState
+                var isConnected by remember { mutableStateOf(true) }
                 LaunchedEffect(Unit) {
                     networkMonitor.isConnected.collect { connected ->
                         isConnected = connected
@@ -101,9 +109,13 @@ class MainActivity : FragmentActivity() {
                 }
                 Box(modifier = Modifier.fillMaxSize()) {
                     if (showPopup) {
-                        LoginScreen { username,password ->
-                            showPopup = false
-                        }
+                        LoginScreen(
+                            onLoginClick = { username, password ->
+                                showPopup = false
+
+                            },
+                            networkMonitor = networkMonitor
+                        )
                     } else {
                         if (!viewModel.getSavedSocketUrl().isNullOrEmpty()) {
                             PubSubUI()
@@ -112,7 +124,7 @@ class MainActivity : FragmentActivity() {
                         }
                     }
                 }
-                NoInternetDialog(isVisible = !isConnected)
+                // NoInternetDialog(isVisible = !isConnected)
                 when (state) {
                     is Resource.Loading -> CircularProgressIndicator()
                     is Resource.Error -> Text("Error: ${state.message}", color = Color.Red)
@@ -133,6 +145,7 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
+
     @SuppressLint("ObsoleteSdkInt")
     private fun requestForegroundServicePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -156,7 +169,8 @@ class MainActivity : FragmentActivity() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
+                != PackageManager.PERMISSION_GRANTED
+            ) {
                 requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
             }
         }

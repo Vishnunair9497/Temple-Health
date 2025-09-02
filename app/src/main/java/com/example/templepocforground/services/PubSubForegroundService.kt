@@ -14,6 +14,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.templepocforground.R
 import com.example.templepocforground.helper.NotificationHelper
+import com.example.templepocforground.utils.NetworkMonitor
 import com.example.templepocforground.utils.SharedPrefsManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -22,6 +23,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -56,17 +58,51 @@ class PubSubForegroundService : Service() {
 
     private var retryCount = 0
 
+    private lateinit var networkMonitor: NetworkMonitor
     override fun onBind(intent: Intent?): IBinder? = null
-
     override fun onCreate() {
         super.onCreate()
-        tokenUrl = prefsManager.getSocketUrl()
-        if (!tokenUrl.isNullOrEmpty()) {
-            initForegroundService()
-            startWebSocket()
-        }
+        networkMonitor = NetworkMonitor(this)
+        initForegroundService()
+        callWebSocket()
         NotificationHelper.createChannels(this)
     }
+
+    private fun callWebSocket() {
+        CoroutineScope(Dispatchers.Default).launch {
+            networkMonitor.isConnected.collect { connected ->
+                if (connected) {
+                    val url = prefsManager.getSocketUrl()
+                    if (!url.isNullOrEmpty()) {
+                        tokenUrl = url
+                        initForegroundService()
+                        startWebSocket()
+                    } else {
+                        Log.w("WebSocket", "TokenUrl not available yet, waiting...")
+                        waitForTokenUrl()
+                    }
+                } else {
+                    stopConnection()
+                }
+            }
+        }
+    }
+
+    private suspend fun waitForTokenUrl() {
+        withContext(Dispatchers.IO) {
+            var url: String? = null
+            while (url.isNullOrEmpty()) {
+                url = prefsManager.getSocketUrl()
+                delay(1000)
+            }
+            tokenUrl = url
+            withContext(Dispatchers.Main) {
+                initForegroundService()
+                startWebSocket()
+            }
+        }
+    }
+
 
     override fun onDestroy() {
         super.onDestroy()
@@ -131,9 +167,9 @@ class PubSubForegroundService : Service() {
                     messages.firstOrNull()?.data?.let {
                         playAlertSound(messages.firstOrNull()?.data?.Category ?: "Cat1")
                         messages.firstOrNull()?.let { it1 ->
-                           /* NotificationHelper.showPushNotification(
-                                applicationContext, Constants.TEMPLE_TRAUMA_ALERT, it1.title
-                            )*/
+                            /* NotificationHelper.showPushNotification(
+                                 applicationContext, Constants.TEMPLE_TRAUMA_ALERT, it1.title
+                             )*/
                         }
                     }
                 }
@@ -151,10 +187,12 @@ class PubSubForegroundService : Service() {
                     if (!prefsManager.isStopped()) {
                         if (retryCount < 5) {
                             retryCount++
-                            startWebSocket()
+                            callWebSocket()
+                            //  startWebSocket()
                         } else {
                             PubSubMessageStore.triggerReestablishSocket()
-                            startWebSocket()
+                            callWebSocket()
+                            // startWebSocket()
                             //   callRetryLimitApi()
                             // retryCount = 0
                         }
@@ -193,22 +231,21 @@ class PubSubForegroundService : Service() {
             return
         }
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 6, AudioManager.FLAG_SHOW_UI)
-        val alertSound: Int = when (category) {
-            "Cat1" -> {
-
+        val alertSound: Int = when (category.lowercase()) {
+            "cat1" -> {
                 R.raw.alerttwo
             }
 
-            "Cat2" -> {
+            "cat2" -> {
                 R.raw.alertone
             }
 
-            "Cat3" -> {
+            "cat3" -> {
                 R.raw.alertthree
             }
 
             else -> {
-                R.raw.alert_sound
+                Log.e("playAlertSound: ", category);
             }
         }
 

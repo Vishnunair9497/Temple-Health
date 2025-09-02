@@ -73,6 +73,10 @@ class HomePageViewModel @Inject constructor(
 
     fun getSavedSocketUrl(): String? = prefs.getSocketUrl()
 
+    fun saveSocketUrl(socketUrl: String) {
+        prefs.saveSocketUrl(socketUrl)
+    }
+
     fun saveUsername(username: String) = prefs.saveUsername(username)
     fun getSavedUsername(): String? = prefs.getUsername()
 

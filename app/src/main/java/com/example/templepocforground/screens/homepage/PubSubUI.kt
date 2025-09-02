@@ -60,6 +60,7 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
     val onCallState by homePageViewModel.onCallState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var latestMessage by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         val deviceId = NotificationHelper.getOrCreateAppId(context)
         val fcmToken = NotificationHelper.fetchFcmToken()
@@ -93,6 +94,7 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
                     viewModel.getSavedUserId()?.let {
                         viewModel.stopAlerts(messages.firstOrNull()?.alertId, it, {
                             showDialog = false
+
                         })
                     }
 
@@ -142,7 +144,8 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
                         viewModel.logOut()
                         Toast.makeText(context, "Logged out", Toast.LENGTH_SHORT).show()
                         val intent = Intent(context, MainActivity::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        intent.flags =
+                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         context.startActivity(intent)
                     },
                     modifier = Modifier
@@ -195,15 +198,18 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            val uniqueMessages = messages.distinctBy { it.alertId }
+            val uniqueMessages =
+                messages.distinctBy { it.alertId }
+            val sortedMessages = uniqueMessages.reversed()
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
                 if (uniqueMessages.isNotEmpty()) {
-                    items(uniqueMessages.size) { index ->
-                        MessageCard(uniqueMessages[index])
+                    items(sortedMessages.size) { index ->
+                        MessageCard(sortedMessages[index])
                     }
                 }
             }
