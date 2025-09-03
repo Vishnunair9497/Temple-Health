@@ -153,6 +153,7 @@ fun LoginScreen(
                                 viewModel.saveUsername(username)
                                 viewModel.saveUserId(result)
                                 viewModel.setStop(false)
+                                viewModel.isLogout(false)
                                 onLoginClick(username, password)
                             }
                         } else {

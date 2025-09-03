@@ -55,6 +55,11 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         requestForegroundServicePermission()
         networkMonitor = NetworkMonitor(this)
+        Log.e("Calling on create application push : ", "Push notification calling >>")
+        val stopSoundIntent = Intent(this, PubSubForegroundService::class.java).apply {
+            action = "STOP_ALERT"
+        }
+        startService(stopSoundIntent)
 
         if (!viewModel.getSavedSocketUrl().isNullOrEmpty()) {
             Log.e("TAG", "onCreate: ${viewModel.getSavedSocketUrl()}")
@@ -105,6 +110,8 @@ class MainActivity : FragmentActivity() {
                 LaunchedEffect(Unit) {
                     networkMonitor.isConnected.collect { connected ->
                         isConnected = connected
+                        viewModel.startConnection()
+                        Log.e("networkMonitor mainAcivity: ", isConnected.toString())
                     }
                 }
                 Box(modifier = Modifier.fillMaxSize()) {

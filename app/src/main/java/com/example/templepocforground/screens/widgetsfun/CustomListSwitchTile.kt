@@ -48,7 +48,6 @@ fun CustomListSwitchTile(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
-            // .height(100.dp)
             .padding(8.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
@@ -57,85 +56,90 @@ fun CustomListSwitchTile(
         ),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.Top
-        ) {
-            Column {
-                Spacer(modifier = Modifier.height(26.dp))
-                Image(
-                    painter = painterResource(id = imageRes),
-                    contentDescription = "Leading Image",
-                    modifier = Modifier.size(36.dp),
-                    // .clip(CircleShape)
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(
-                modifier = Modifier.weight(1f)
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(), verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    color = Color.White
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                )
-                Text(
-                    text = connectingVia,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                )
-                Box(
-                    contentAlignment = Alignment.Center, modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    Text(
-                        text = receivingAlert,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White,
-                        fontSize = 16.sp,
+                Column {
+                    Spacer(modifier = Modifier.height(26.dp))
+                    Image(
+                        painter = painterResource(id = imageRes),
+                        contentDescription = "Leading Image",
+                        modifier = Modifier.size(36.dp)
                     )
                 }
 
-            }
-            val isConnected = connectionState.firstOrNull() == "CONNECTED"
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.Top
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = if (isConnected) "On Call" else "OFF Call",
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = subtitle,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White,
-                        fontSize = 16.sp,
+                        fontSize = 16.sp
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Switch(
-                        checked = isConnected, onCheckedChange = { checked ->
-                            if (checked) startConnection() else stopConnection()
-                        }, colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color.Green,
-                            uncheckedThumbColor = Color.Gray,
-                            uncheckedTrackColor = Color.LightGray
+                    Text(
+                        text = connectingVia,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+
+                val isConnected = connectionState.firstOrNull() == "CONNECTED"
+
+                Column(
+                    horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Top
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isConnected) "On Call" else "Off Call",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White,
+                            fontSize = 16.sp
                         )
-                    )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Switch(
+                            checked = isConnected, onCheckedChange = { checked ->
+                                if (checked) startConnection() else stopConnection()
+                            }, colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color.Green,
+                                uncheckedThumbColor = Color.Gray,
+                                uncheckedTrackColor = Color.LightGray
+                            )
+                        )
+                    }
                 }
             }
 
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = receivingAlert,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+            }
         }
     }
+
 }

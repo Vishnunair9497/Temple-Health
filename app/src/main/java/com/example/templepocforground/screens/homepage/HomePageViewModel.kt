@@ -114,10 +114,15 @@ class HomePageViewModel @Inject constructor(
 
     fun logOut() {
         prefs.clearAll()
+        prefs.setLogOut(true)
     }
 
     fun setStop(bool: Boolean) {
         prefs.setStopped(bool)
+    }
+
+    fun isLogout(logout: Boolean) {
+        prefs.setLogOut(logout)
     }
 
 

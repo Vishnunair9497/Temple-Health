@@ -16,7 +16,7 @@ class SharedPrefsManager @Inject constructor(
         private const val IS_STOPPED = "is_stoped"
         private const val KEY_FCM_TOKEN = "last_fcm_token"
         private const val KEY_DEVICE_ID = "last_registered_device_id"
-        private const val FIRST_TIME = "firstTimeLogin"
+        private const val IS_LOGOUT = "is_logout"
     }
 
     fun saveSocketUrl(url: String) {
@@ -64,12 +64,12 @@ class SharedPrefsManager @Inject constructor(
         return savedDeviceId == deviceId && savedToken == token
     }
 
-    fun saveFirstTime(login: Boolean) {
-        sharedPreferences.edit { putBoolean(FIRST_TIME, login) }
+    fun setLogOut(logout: Boolean) {
+        sharedPreferences.edit { putBoolean(IS_LOGOUT, logout) }
     }
 
-    fun getFirstTime(): Boolean? {
-        return sharedPreferences.getBoolean(FIRST_TIME, true)
+    fun isLogOut(): Boolean? {
+        return sharedPreferences.getBoolean(IS_LOGOUT, true)
     }
 
 

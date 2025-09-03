@@ -32,7 +32,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
 
-
     private fun showNotification(title: String, message: String) {
         val channelId = "fcm_channel"
         val notificationManager =
@@ -81,7 +80,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             .setStyle(inboxStyle)
             .setGroup("GROUP_FCM")
             .setGroupSummary(true)
-            .setContentIntent(pendingIntent)
+            // .setContentIntent(pendingIntent)
             .build()
 
         notificationManager.notify(0, summaryNotification)

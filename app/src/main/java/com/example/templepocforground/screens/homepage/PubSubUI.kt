@@ -41,13 +41,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.templepocforground.MainActivity
 import com.example.templepocforground.R
 import com.example.templepocforground.helper.NotificationHelper
-import com.example.templepocforground.models.AlertResponse
 import com.example.templepocforground.screens.widgetsfun.CustomListSwitchTile
 import com.example.templepocforground.screens.widgetsfun.MessageCard
 import com.example.templepocforground.screens.widgetsfun.TraumaAlertPopUp
 import com.example.templepocforground.services.PubSubMessageStore
 import com.example.templepocforground.utils.getNetworkType
-import com.example.templepocforground.utils.parseDate
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -62,9 +61,12 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
     var showDialog by remember { mutableStateOf(false) }
     var latestMessage by remember { mutableStateOf<String?>(null) }
 
+
     LaunchedEffect(Unit) {
         viewModel.startConnection()
     }
+
+
 
     LaunchedEffect(Unit) {
         val deviceId = NotificationHelper.getOrCreateAppId(context)
@@ -105,6 +107,13 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
                     }
 
                 })
+
+            LaunchedEffect(Unit) {
+                delay(30_000L)
+                showDialog = false
+                viewModel.stopSound()
+            }
+
         }
     }
 
@@ -119,6 +128,7 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
                 Button(
                     onClick = {
                         messages.clear()
+                        viewModel.setStop(true)
                         viewModel.logOut()
                         viewModel.stopConnection()
                         messages.clear()
@@ -154,7 +164,7 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
             viewModel.getSavedUsername()?.let { username ->
                 val isConnected = connectionState.firstOrNull() == "CONNECTED"
                 CustomListSwitchTile(
-                    imageRes = if (isConnected) R.drawable.connectedpersonicon else R.drawable.disconnectedpersonicon,
+                    imageRes = if (isConnected) R.drawable.connectedicon else R.drawable.disconnectedicon,
                     title = username,
                     subtitle = if (isConnected) "Socket : Connected" else "Socket : Disconnected",
                     onClick = {},
@@ -178,22 +188,23 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            /* val uniqueMessages =
-                 messages.distinctBy { it.alertId }*/
+            val uniqueMessages =
+                messages.distinctBy { it.alertId }.sortedByDescending { it.createdDate }
+            /*
+                        val uniqueMessages = messages
+                           .groupBy { it.alertId }
+                            .mapValues { entry ->
+                                entry.value.maxWithOrNull(
+                                    compareBy<AlertResponse> { it.iteration }
+                                        .thenByDescending { parseDate(it.createdDate) }
+                                )!!
+                            }
+                            .values
+                            .sortedWith(
+                                compareByDescending<AlertResponse> { it.iteration }
+                                    .thenByDescending { parseDate(it.createdDate) }
+                            )*/
 
-            val uniqueMessages = messages
-                .groupBy { it.alertId }
-                .mapValues { entry ->
-                    entry.value.maxWithOrNull(
-                        compareBy<AlertResponse> { it.iteration }
-                            .thenByDescending { parseDate(it.createdDate) }
-                    )!!
-                }
-                .values
-                .sortedWith(
-                    compareByDescending<AlertResponse> { it.iteration }
-                        .thenByDescending { parseDate(it.createdDate) }
-                )
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()

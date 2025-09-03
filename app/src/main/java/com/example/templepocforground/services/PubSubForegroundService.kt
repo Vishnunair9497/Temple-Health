@@ -55,11 +55,11 @@ class PubSubForegroundService : Service() {
     private lateinit var webSocket: WebSocket
     private var mediaPlayer: MediaPlayer? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
+    private lateinit var networkMonitor: NetworkMonitor
     private var retryCount = 0
 
-    private lateinit var networkMonitor: NetworkMonitor
     override fun onBind(intent: Intent?): IBinder? = null
+
     override fun onCreate() {
         super.onCreate()
         networkMonitor = NetworkMonitor(this)
@@ -67,42 +67,6 @@ class PubSubForegroundService : Service() {
         callWebSocket()
         NotificationHelper.createChannels(this)
     }
-
-    private fun callWebSocket() {
-        CoroutineScope(Dispatchers.Default).launch {
-            networkMonitor.isConnected.collect { connected ->
-                if (connected) {
-                    val url = prefsManager.getSocketUrl()
-                    if (!url.isNullOrEmpty()) {
-                        tokenUrl = url
-                        initForegroundService()
-                        startWebSocket()
-                    } else {
-                        Log.w("WebSocket", "TokenUrl not available yet, waiting...")
-                        waitForTokenUrl()
-                    }
-                } else {
-                    stopConnection()
-                }
-            }
-        }
-    }
-
-    private suspend fun waitForTokenUrl() {
-        withContext(Dispatchers.IO) {
-            var url: String? = null
-            while (url.isNullOrEmpty()) {
-                url = prefsManager.getSocketUrl()
-                delay(1000)
-            }
-            tokenUrl = url
-            withContext(Dispatchers.Main) {
-                initForegroundService()
-                startWebSocket()
-            }
-        }
-    }
-
 
     override fun onDestroy() {
         super.onDestroy()
@@ -123,9 +87,8 @@ class PubSubForegroundService : Service() {
 
     private fun initForegroundService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW
-            )
+            val channel =
+                NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW)
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
 
@@ -140,6 +103,39 @@ class PubSubForegroundService : Service() {
     private fun notifyAlert() {
         val notification = NotificationHelper.createAlertNotification(this)
         getSystemService(NotificationManager::class.java).notify(2, notification)
+    }
+
+    private fun callWebSocket() {
+        CoroutineScope(Dispatchers.Default).launch {
+            networkMonitor.isConnected.collect { connected ->
+                if (connected) {
+                    val url = prefsManager.getSocketUrl()
+                    if (!url.isNullOrEmpty()) {
+                        tokenUrl = url
+                        initForegroundService()
+                        startWebSocket()
+                    } else {
+                        Log.w("WebSocket", "TokenUrl not available yet, waiting...")
+                        waitForTokenUrl()
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun waitForTokenUrl() {
+        withContext(Dispatchers.IO) {
+            var url: String? = null
+            while (url.isNullOrEmpty()) {
+                url = prefsManager.getSocketUrl()
+                delay(1000)
+            }
+            tokenUrl = url
+            withContext(Dispatchers.Main) {
+                initForegroundService()
+                startWebSocket()
+            }
+        }
     }
 
     private fun startWebSocket() {
@@ -158,19 +154,17 @@ class PubSubForegroundService : Service() {
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                stopSound()
-                if (prefsManager.isStopped()) return
+                if (prefsManager.isStopped() || prefsManager.isLogOut() == true) return
+
                 Log.e("Message >>>>", "Text >>>> $text")
                 PubSubMessageStore.addMessage(text)
                 PubSubMessageStore.connectionStatus("CONNECTED")
+
                 CoroutineScope(Dispatchers.Main).launch {
-                    val messages = PubSubMessageStore.messages
-                    messages.firstOrNull()?.data?.let {
-                        playAlertSound(messages.firstOrNull()?.data?.Category ?: "Cat1")
-                        messages.firstOrNull()?.let { it1 ->
-                            /* NotificationHelper.showPushNotification(
-                                 applicationContext, Constants.TEMPLE_TRAUMA_ALERT, it1.title
-                             )*/
+                    val latestMessage = PubSubMessageStore.messages.firstOrNull()
+                    latestMessage?.data?.let {
+                        if (stopSoundSafely()) {
+                            playAlertSound(it.Category)
                         }
                     }
                 }
@@ -189,14 +183,10 @@ class PubSubForegroundService : Service() {
                         if (retryCount < 5) {
                             retryCount++
                             callWebSocket()
-
-                            //  startWebSocket()
                         } else {
                             PubSubMessageStore.triggerReestablishSocket()
                             callWebSocket()
-                            // startWebSocket()
-                            //   callRetryLimitApi()
-                            // retryCount = 0
+                            retryCount = 0
                         }
                     }
                 }
@@ -215,14 +205,39 @@ class PubSubForegroundService : Service() {
         }
         prefsManager.setStopped(true)
         stopSound()
+        stopSoundSafely()
         mediaPlayer?.release()
         stopSelf()
         PubSubMessageStore.connectionStatus("CONNECTION_FAIL")
         onDestroy()
     }
 
+    private fun stopSound() {
+        mediaPlayer?.let {
+            if (it.isPlaying) it.stop()
+            it.release()
+            mediaPlayer = null
+        }
+    }
+
+    private fun stopSoundSafely(): Boolean {
+        mediaPlayer?.let {
+            try {
+                if (it.isPlaying) it.stop()
+                it.release()
+                mediaPlayer = null
+                return true
+            } catch (e: Exception) {
+                Log.e("stopSoundSafely", "Error stopping sound: ${e.message}")
+                return false
+            }
+        }
+        return true
+    }
+
     private fun playAlertSound(category: String) {
         stopSound()
+
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         val focusGranted = audioManager.requestAudioFocus(
             null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
@@ -232,40 +247,32 @@ class PubSubForegroundService : Service() {
             vibrateFallback()
             return
         }
+
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 6, AudioManager.FLAG_SHOW_UI)
-        val alertSound: Int = when (category.lowercase()) {
-            "cat1" -> {
-                R.raw.alerttwo
-            }
 
-            "cat2" -> {
-                R.raw.alertone
-            }
-
-            "cat3" -> {
-                R.raw.alertthree
-            }
-
+        val alertSound: Int? = when (category.lowercase()) {
+            "cat1" -> R.raw.alerttwo
+            "cat2" -> R.raw.alertone
+            "cat3" -> R.raw.alertthree
             else -> {
-                Log.e("playAlertSound: ", category);
+                Log.e("playAlertSound", "Unknown category: $category")
+                null
             }
         }
 
-        mediaPlayer = (MediaPlayer.create(this, alertSound)?.apply {
-            isLooping = false
-            setOnCompletionListener {
-                it.release()
-                mediaPlayer = null
+        if (alertSound != null) {
+            mediaPlayer = MediaPlayer.create(this, alertSound)
+            mediaPlayer?.apply {
+                isLooping = false
+                setOnCompletionListener {
+                    it.release()
+                    mediaPlayer = null
+                    audioManager.abandonAudioFocus(null)
+                }
+                start()
             }
-            start()
-        } ?: vibrateFallback()) as MediaPlayer?
-    }
-
-    private fun stopSound() {
-        mediaPlayer?.let {
-            if (it.isPlaying) it.stop()
-            it.release()
-            mediaPlayer = null
+        } else {
+            vibrateFallback()
         }
     }
 
@@ -279,3 +286,4 @@ class PubSubForegroundService : Service() {
         Log.d("PubSubService", "Vibration fallback triggered.")
     }
 }
+
