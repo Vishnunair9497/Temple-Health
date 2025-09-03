@@ -51,10 +51,10 @@ class HomePageViewModel @Inject constructor(
                     onSuccess()
                     Resource.Success(body!!)
                 } else {
-                    Resource.Error("fetch failed")
+                    Resource.Error("")
                 }
             } catch (e: Exception) {
-                Resource.Error(e.message ?: "Unknown error")
+                Resource.Error("")
             }
         }
     }

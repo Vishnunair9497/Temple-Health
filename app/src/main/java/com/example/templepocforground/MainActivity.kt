@@ -16,14 +16,12 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -134,7 +132,7 @@ class MainActivity : FragmentActivity() {
                 // NoInternetDialog(isVisible = !isConnected)
                 when (state) {
                     is Resource.Loading -> CircularProgressIndicator()
-                    is Resource.Error -> Text("Error: ${state.message}", color = Color.Red)
+                    //   is Resource.Error -> Text("Error: ${state.message}", color = Color.Red)
                     else -> {}
                 }
 
@@ -152,6 +150,7 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
+    
 
     @SuppressLint("ObsoleteSdkInt")
     private fun requestForegroundServicePermission() {

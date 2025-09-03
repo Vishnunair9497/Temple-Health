@@ -61,12 +61,9 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
     var showDialog by remember { mutableStateOf(false) }
     var latestMessage by remember { mutableStateOf<String?>(null) }
 
-
     LaunchedEffect(Unit) {
         viewModel.startConnection()
     }
-
-
 
     LaunchedEffect(Unit) {
         val deviceId = NotificationHelper.getOrCreateAppId(context)
@@ -116,6 +113,7 @@ fun PubSubUI(homePageViewModel: HomePageViewModel = hiltViewModel()) {
 
         }
     }
+
 
     Scaffold(
         bottomBar = {

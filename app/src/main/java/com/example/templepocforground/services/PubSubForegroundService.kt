@@ -107,21 +107,32 @@ class PubSubForegroundService : Service() {
 
     private fun callWebSocket() {
         CoroutineScope(Dispatchers.Default).launch {
-            networkMonitor.isConnected.collect { connected ->
-                if (connected) {
-                    val url = prefsManager.getSocketUrl()
-                    if (!url.isNullOrEmpty()) {
-                        tokenUrl = url
-                        initForegroundService()
-                        startWebSocket()
-                    } else {
-                        Log.w("WebSocket", "TokenUrl not available yet, waiting...")
-                        waitForTokenUrl()
+            try {
+                networkMonitor.isConnected.collect { connected ->
+                    try {
+                        if (connected) {
+                            val url = prefsManager.getSocketUrl()
+                            if (!url.isNullOrEmpty()) {
+                                tokenUrl = url
+                                initForegroundService()
+                                startWebSocket()
+                            } else {
+                                Log.w("WebSocket", "TokenUrl not available yet, waiting...")
+                                waitForTokenUrl()
+                            }
+                        } else {
+                            Log.e("WebSocket", "No internet connection.")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("WebSocket", "Error inside collect block: ${e.message}", e)
                     }
                 }
+            } catch (e: Exception) {
+                Log.e("WebSocket", "Error starting callWebSocket: ${e.message}", e)
             }
         }
     }
+
 
     private suspend fun waitForTokenUrl() {
         withContext(Dispatchers.IO) {
@@ -248,7 +259,7 @@ class PubSubForegroundService : Service() {
             return
         }
 
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 6, AudioManager.FLAG_SHOW_UI)
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 2, AudioManager.FLAG_PLAY_SOUND)
 
         val alertSound: Int? = when (category.lowercase()) {
             "cat1" -> R.raw.alerttwo
