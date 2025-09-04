@@ -259,7 +259,7 @@ class PubSubForegroundService : Service() {
             return
         }
 
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 2, AudioManager.FLAG_PLAY_SOUND)
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 10, AudioManager.FLAG_PLAY_SOUND)
 
         val alertSound: Int? = when (category.lowercase()) {
             "cat1" -> R.raw.alerttwo
