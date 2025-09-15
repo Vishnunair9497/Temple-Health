@@ -3,10 +3,12 @@ package com.example.templepocforground.screens.widgetsfun
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,6 +28,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.templepocforground.R
 import com.example.templepocforground.services.PubSubMessageStore
 
@@ -41,12 +44,10 @@ fun CustomListSwitchTile(
     receivingAlert: String,
 ) {
     val connectionState = PubSubMessageStore.connection
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
-            // .height(100.dp)
             .padding(8.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
@@ -55,75 +56,90 @@ fun CustomListSwitchTile(
         ),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                painter = painterResource(id = imageRes),
-                contentDescription = "Leading Image",
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
                 modifier = Modifier
-                    .size(48.dp)
-                   // .clip(CircleShape)
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
+                    .padding(16.dp)
+                    .fillMaxWidth(), verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
-                )
-                Text(
-                    text = connectingVia,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
-                )
+                Column {
+                    Spacer(modifier = Modifier.height(26.dp))
+                    Image(
+                        painter = painterResource(id = imageRes),
+                        contentDescription = "Leading Image",
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        text = connectingVia,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+
+                val isConnected = connectionState.firstOrNull() == "CONNECTED"
+
+                Column(
+                    horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Top
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isConnected) "On Call" else "Off Call",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Switch(
+                            checked = isConnected, onCheckedChange = { checked ->
+                                if (checked) startConnection() else stopConnection()
+                            }, colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color.Green,
+                                uncheckedThumbColor = Color.Gray,
+                                uncheckedTrackColor = Color.LightGray
+                            )
+                        )
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
                     text = receivingAlert,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
-                )
-
-            }
-            val isConnected = connectionState.firstOrNull() == "CONNECTED"
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "On Call",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Switch(
-                    checked = isConnected,
-                    onCheckedChange = { checked ->
-                        if (checked) startConnection() else stopConnection()
-                    },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = Color.Green,
-                        uncheckedThumbColor = Color.Gray,
-                        uncheckedTrackColor = Color.LightGray
-                    )
+                    color = Color.White,
+                    fontSize = 16.sp
                 )
             }
-
         }
     }
+
 }

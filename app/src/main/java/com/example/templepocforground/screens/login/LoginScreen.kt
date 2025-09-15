@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,16 +43,27 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.templepocforground.R
 import com.example.templepocforground.models.authenticate
 import com.example.templepocforground.screens.homepage.HomePageViewModel
+import com.example.templepocforground.utils.NetworkMonitor
 
 
 @Composable
 fun LoginScreen(
-    onLoginClick: (String, String) -> Unit
+    onLoginClick: (String, String) -> Unit,
+    networkMonitor: NetworkMonitor = NetworkMonitor(LocalContext.current)
+
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val context = LocalContext.current
+    var isConnected by remember { mutableStateOf(true) }
+
     val viewModel: HomePageViewModel = hiltViewModel()
+
+    LaunchedEffect(Unit) {
+        networkMonitor.isConnected.collect { connected ->
+            isConnected = connected
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -87,8 +99,8 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
+                value = username.trim(),
+                onValueChange = { username = it.trim() },
                 label = { Text("Username") },
                 textStyle = TextStyle(color = Color.Black),
                 modifier = Modifier.fillMaxWidth()
@@ -97,8 +109,8 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
+                value = password.trim(),
+                onValueChange = { password = it.trim() },
                 label = { Text("Password") },
                 textStyle = TextStyle(color = Color.Black),
                 visualTransformation = PasswordVisualTransformation(),
@@ -110,6 +122,14 @@ fun LoginScreen(
         Button(
             onClick = {
                 when {
+                    !isConnected -> {
+                        Toast.makeText(
+                            context,
+                            "No Internet Connection",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
                     username.isBlank() || password.isBlank() -> {
                         Toast.makeText(
                             context,
@@ -133,6 +153,7 @@ fun LoginScreen(
                                 viewModel.saveUsername(username)
                                 viewModel.saveUserId(result)
                                 viewModel.setStop(false)
+                                viewModel.isLogout(false)
                                 onLoginClick(username, password)
                             }
                         } else {

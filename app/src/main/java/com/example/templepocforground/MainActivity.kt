@@ -16,14 +16,12 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -39,7 +37,6 @@ import com.example.templepocforground.services.PubSubForegroundService
 import com.example.templepocforground.services.PubSubMessageStore
 import com.example.templepocforground.ui.theme.TemplePOCForgroundTheme
 import com.example.templepocforground.utils.NetworkMonitor
-import com.example.templepocforground.utils.NoInternetDialog
 import com.example.templepocforground.utils.Resource
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -56,6 +53,11 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         requestForegroundServicePermission()
         networkMonitor = NetworkMonitor(this)
+        Log.e("Calling on create application push : ", "Push notification calling >>")
+        val stopSoundIntent = Intent(this, PubSubForegroundService::class.java).apply {
+            action = "STOP_ALERT"
+        }
+        startService(stopSoundIntent)
 
         if (!viewModel.getSavedSocketUrl().isNullOrEmpty()) {
             Log.e("TAG", "onCreate: ${viewModel.getSavedSocketUrl()}")
@@ -65,13 +67,24 @@ class MainActivity : FragmentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 PubSubMessageStore.reestablishSocket.collect { shouldReestablish ->
-                    if (shouldReestablish){
+                    if (shouldReestablish) {
                         viewModel.getSavedUserId()?.let {
                             viewModel.getSocketUrl(it) {
                                 viewModel.setStop(false)
                                 PubSubMessageStore.resetReestablishSocket()
                                 viewModel.getSavedSocketUrl()
-                                    ?.let { msg -> Log.e("Reinitiate >>>>>", msg) }
+                                    ?.let { msg ->
+                                        viewModel.saveSocketUrl(msg)
+                                        Log.e("TAG", "onCreate: ${viewModel.getSavedSocketUrl()}")
+                                        val serviceIntent = Intent(
+                                            this@MainActivity,
+                                            PubSubForegroundService::class.java
+                                        )
+                                        ContextCompat.startForegroundService(
+                                            this@MainActivity,
+                                            serviceIntent
+                                        )
+                                    }
                             }
                         }
                     }
@@ -89,21 +102,25 @@ class MainActivity : FragmentActivity() {
                         viewModel.getSavedUsername().isNullOrEmpty()
                     )
                 }
-                var isConnected by remember { mutableStateOf(true) }
+
                 val state = viewModel.socketState
+                var isConnected by remember { mutableStateOf(true) }
                 LaunchedEffect(Unit) {
                     networkMonitor.isConnected.collect { connected ->
                         isConnected = connected
+                        viewModel.startConnection()
+                        Log.e("networkMonitor mainAcivity: ", isConnected.toString())
                     }
                 }
                 Box(modifier = Modifier.fillMaxSize()) {
                     if (showPopup) {
-                        LoginScreen { username,password ->
-                            showPopup = false
-                        }
-                       /* UsernamePopup(context) { enteredUsername ->
-                            showPopup = false
-                        }*/
+                        LoginScreen(
+                            onLoginClick = { username, password ->
+                                showPopup = false
+
+                            },
+                            networkMonitor = networkMonitor
+                        )
                     } else {
                         if (!viewModel.getSavedSocketUrl().isNullOrEmpty()) {
                             PubSubUI()
@@ -112,10 +129,10 @@ class MainActivity : FragmentActivity() {
                         }
                     }
                 }
-                NoInternetDialog(isVisible = !isConnected)
+                // NoInternetDialog(isVisible = !isConnected)
                 when (state) {
                     is Resource.Loading -> CircularProgressIndicator()
-                    is Resource.Error -> Text("Error: ${state.message}", color = Color.Red)
+                    //   is Resource.Error -> Text("Error: ${state.message}", color = Color.Red)
                     else -> {}
                 }
 
@@ -133,6 +150,8 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
+    
+
     @SuppressLint("ObsoleteSdkInt")
     private fun requestForegroundServicePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -156,7 +175,8 @@ class MainActivity : FragmentActivity() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
+                != PackageManager.PERMISSION_GRANTED
+            ) {
                 requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
             }
         }

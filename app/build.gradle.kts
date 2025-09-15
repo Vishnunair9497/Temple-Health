@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    id("com.google.gms.google-services")
+
 }
 
 android {
@@ -66,6 +68,7 @@ dependencies {
     implementation(libs.okhttp)
 
     implementation(libs.hilt.android)
+    implementation(libs.firebase.messaging)
     ksp(libs.hilt.compiler)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
@@ -76,6 +79,7 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.javapoet)
     implementation(libs.androidx.biometric)
+    implementation(libs.firebase.messaging)
 
 
     testImplementation(libs.junit)

@@ -11,7 +11,10 @@ import androidx.core.app.NotificationCompat
 import com.example.templepocforground.MainActivity
 import com.example.templepocforground.R
 import com.example.templepocforground.services.PubSubForegroundService
+import com.google.firebase.messaging.FirebaseMessaging
 import constants.Constants
+import kotlinx.coroutines.tasks.await
+import java.util.UUID
 
 object NotificationHelper {
 
@@ -115,11 +118,24 @@ object NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_HIGH) // Pre-Oreo
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
     }
+    fun getOrCreateAppId(context: Context): String {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        return prefs.getString("app_id", null) ?: UUID.randomUUID().toString().also {
+            prefs.edit().putString("app_id", it).apply()
+        }
+    }
 
+    suspend fun fetchFcmToken(): String? {
+        return try {
+            val token = FirebaseMessaging.getInstance().token.await()
+            if (token.isNullOrBlank()) null else token
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

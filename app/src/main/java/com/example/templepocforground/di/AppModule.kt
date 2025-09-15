@@ -21,7 +21,8 @@ object AppModule {
     @Provides
     @Singleton
     fun provideRetrofit(): Retrofit = Retrofit.Builder()
-        .baseUrl("https://func-alert-notification-app.azurewebsites.net/api/")
+        //.baseUrl("https://func-alert-notification-app.azurewebsites.net/api/")
+        .baseUrl("http://endpoint-temple-er-demo-epaugjcsfzbdhqhd.a02.azurefd.net/api/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 

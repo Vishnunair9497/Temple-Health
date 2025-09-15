@@ -18,16 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.templepocforground.R
-import com.example.templepocforground.models.PubSubMessage
-import com.example.templepocforground.utils.formatDateTime
+import com.example.templepocforground.models.AlertResponse
+import com.example.templepocforground.utils.formatIsoToReadable
 
 
 @Composable
-fun MessageCard(message: PubSubMessage) {
+fun MessageCard(message: AlertResponse) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -47,22 +46,22 @@ fun MessageCard(message: PubSubMessage) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.logindocimage),
+                    painter = painterResource(id = R.drawable.alertcardiconcircle),
                     contentDescription = "Leading Image",
-                    modifier = Modifier
-                        .size(32.dp)
+                    modifier = Modifier.size(32.dp)
                     // .clip(CircleShape)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = message.Message,
+
+                    text = " ${message.data.Category}" + "\t" + message.data.Gender + "\t" + message.data.Injury + "\t" + message.data.Consideration + "\t" + message.data.PtNo,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    // fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
             }
             Text(
-                text = formatDateTime(message.Timestamp),
+                text = formatIsoToReadable(message.createdDate),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.End,
                 color = colorResource(id = R.color.black),
